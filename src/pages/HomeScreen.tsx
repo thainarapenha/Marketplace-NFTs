@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -40,15 +40,16 @@ import {
 } from "@/mocks/home";
 
 export const HomeScreen = () => {
-  const minPrice = 0.02;
-  const maxPrice = 12.38;
+  const defaultMinPrice = 0.02;
+const defaultMaxPrice = 12.38;
   const itemsPerPage = 9;
 
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const [price, setPrice] = useState([minPrice, maxPrice]);
+  const [price, setPrice] = useState([defaultMinPrice, defaultMaxPrice]);
   const [sort, setSort] = useState("recent");
   const [tab, setTab] = useState("all");
+  const [heroIndex, setHeroIndex] = useState(0);
 
   const {
     data: nfts = [],
@@ -58,6 +59,16 @@ export const HomeScreen = () => {
     queryKey: ["nfts"],
     queryFn: getNfts,
   });
+
+  useEffect(() => {
+    if (nfts.length < 3) return;
+
+    const interval = setInterval(() => {
+      setHeroIndex((current) => (current + 1) % 3);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [nfts.length]);
 
   const toggle = (name: string) => {
     setChecked((prev) => {
@@ -131,12 +142,38 @@ export const HomeScreen = () => {
     setPage(Math.min(Math.max(nextPage, 1), totalPages));
   };
 
+  const collectionOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    nfts.forEach((nft) => {
+      counts.set(nft.collection, (counts.get(nft.collection) ?? 0) + 1);
+    });
+
+    return Array.from(counts.entries());
+  }, [nfts]);
+
+  const priceRange = useMemo(() => {
+    if (nfts.length === 0) {
+      return {
+        min: defaultMinPrice,
+        max: defaultMaxPrice,
+      };
+    }
+
+    const prices = nfts.map((nft) => Number.parseFloat(nft.price));
+
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [nfts]);
+
   return (
     <main className="mx-auto max-w-[1200px] px-4 md:px-6">
       {/* ---------- Hero ---------- */}
 
-      <section className="mt-2 grid items-center gap-6 rounded-2xl md:grid-cols-2">
-        <div className="space-y-5 py-8 md:pl-10">
+      <section className="mt-2 grid items-stretch gap-6 rounded-2xl md:grid-cols-[6fr_4fr]">
+        <div className="flex flex-col justify-center space-y-5 py-8 md:pl-10">
           <p className="text-xs text-muted-foreground">
             Bem-vindo à Kurio
           </p>
@@ -151,23 +188,38 @@ export const HomeScreen = () => {
             cultura da internet.
           </p>
 
-          <Button>EXPLORAR</Button>
+          <Button className="self-start">EXPLORAR</Button>
 
           <div className="flex gap-1.5 pt-4 md:pl-[70%]">
-            <span className="size-1.5 rounded-full bg-primary" />
-            <span className="size-1.5 rounded-full bg-primary/60" />
-            <span className="size-1.5 rounded-full bg-primary/60" />
+            {nfts.slice(0, 3).map((nft, index) => (
+              <button
+                key={nft.id}
+                type="button"
+                aria-label={`Exibir ${nft.name}`}
+                onClick={() => setHeroIndex(index)}
+                className={`size-1.5 rounded-full transition-opacity ${
+                  heroIndex === index ? "bg-primary" : "bg-primary/60"
+                }`}
+              />
+            ))}
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-3xl">
-          <AspectRatio ratio={1}>
+        <div className="relative min-h-[420px] overflow-hidden rounded-3xl md:min-h-0">
+          {nfts.slice(0, 3).map((nft, index) => (
             <img
-              src={img(1)}
-              alt="NFT em destaque"
-              className="h-full w-full object-cover"
+              key={nft.id}
+              src={nft.gallery[0]}
+              alt={nft.name}
+              className={`absolute inset-0 h-full w-full object-cover transition-all duration-700 ${
+                heroIndex === index
+                  ? "translate-x-0 opacity-100"
+                  : index < heroIndex
+                    ? "-translate-x-full opacity-0"
+                    : "translate-x-full opacity-0"
+              }`}
             />
-          </AspectRatio>
+          ))}
         </div>
       </section>
 
@@ -181,7 +233,7 @@ export const HomeScreen = () => {
                 <h3 className="mb-3 text-sm font-semibold">Coleções</h3>
 
                 <ul className="space-y-2.5">
-                  {collections.map(([name, count]) => (
+                  {collectionOptions.map(([name, count]) => (
                     <li
                       key={name}
                       className="flex items-center justify-between text-xs"
@@ -209,8 +261,8 @@ export const HomeScreen = () => {
                 <h3 className="text-sm font-semibold">Faixa de preço</h3>
 
                 <Slider
-                  min={minPrice}
-                  max={maxPrice}
+                  min={defaultMinPrice}
+                  max={defaultMaxPrice}
                   step={0.01}
                   value={price}
                   onValueChange={(value) => {
@@ -257,25 +309,33 @@ export const HomeScreen = () => {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 bg-secondary">
-            <CardContent className="p-0">
-              <div className="space-y-1 p-3">
-                <p className="text-sm font-bold text-primary">
-                  NFT EM DESTAQUE
-                </p>
+          {nfts[0] && (
+            <Card className="overflow-hidden border-0 bg-secondary">
+              <CardContent className="p-0">
+                <div className="space-y-1 p-3">
+                  <p className="text-sm font-bold text-primary">
+                    NFT EM DESTAQUE
+                  </p>
 
-                <p className="text-xs font-semibold">OFERTA LIMITADA</p>
-              </div>
+                  <p className="text-xs font-semibold">{nfts[0].name}</p>
+                </div>
 
-              <AspectRatio ratio={4 / 5}>
-                <img
-                  src={img(2)}
-                  alt="NFT em destaque"
-                  className="h-full w-full object-cover"
-                />
-              </AspectRatio>
-            </CardContent>
-          </Card>
+                <AspectRatio ratio={4 / 5}>
+                  <Link
+                    to="/nft/$id"
+                    params={{ id: nfts[0].id }}
+                    className="block h-full"
+                  >
+                    <img
+                      src={nfts[0].gallery[0]}
+                      alt={nfts[0].name}
+                      className="h-full w-full object-cover"
+                    />
+                  </Link>
+                </AspectRatio>
+              </CardContent>
+            </Card>
+          )}
         </aside>
 
         <div>
@@ -283,11 +343,13 @@ export const HomeScreen = () => {
             <Tabs
               value={tab}
               onValueChange={(value) => {
+                if (!value) return;
+
                 setTab(value);
                 setPage(1);
               }}
             >
-              <TabsList className="h-auto gap-4 bg-transparent p-0">
+              <TabsList variant="line" className="h-auto gap-4 bg-transparent p-0">
                 {[
                   ["all", "Todos os NFTs"],
                   ["new", "Novos lançamentos"],
@@ -296,7 +358,7 @@ export const HomeScreen = () => {
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+                    className="rounded-none border-transparent bg-transparent px-0 pb-1 text-xs text-muted-foreground shadow-none data-active:text-[#E89B55] data-active:after:bg-[#E89B55]"
                   >
                     {label}
                   </TabsTrigger>
