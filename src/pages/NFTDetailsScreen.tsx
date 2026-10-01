@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Heart,
@@ -46,6 +46,8 @@ export const NftDetailScreen = () => {
   const [api, setApi] = useState<CarouselApi>();
   const [dot, setDot] = useState(0);
   const [dots, setDots] = useState(0);
+
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
 
   /* ---------- NFT ---------- */
   const {
@@ -186,6 +188,7 @@ export const NftDetailScreen = () => {
               size="icon"
               aria-label="Ampliar imagem"
               className="absolute right-2 top-2 size-8 rounded-full bg-card"
+              onClick={() => setIsImageExpanded(true)}
             >
               <Search className="size-4" />
             </Button>
@@ -319,19 +322,49 @@ export const NftDetailScreen = () => {
         </div>
       </section>
 
+      {isImageExpanded && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Imagem ampliada de ${nft.name}`}
+          onClick={() => setIsImageExpanded(false)}
+        >
+          <img
+            src={nft.gallery[selected]}
+            alt={nft.name}
+            className="max-h-full max-w-full object-contain"
+            onClick={(event) => event.stopPropagation()}
+          />
+
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Fechar imagem ampliada"
+            className="absolute right-4 top-4 size-10 rounded-full bg-card"
+            onClick={() => setIsImageExpanded(false)}
+          >
+            ×
+          </Button>
+        </div>
+      )}
+
       {/* ===== Abas ===== */}
       <Tabs defaultValue="details" className="mt-16">
-        <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b border-border bg-transparent p-0">
+        <TabsList
+          variant="line"
+          className="h-auto gap-6 bg-transparent p-0"
+        >
           <TabsTrigger
             value="details"
-            className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2 text-sm shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+            className="rounded-none border-transparent bg-transparent px-0 pb-1 text-sm text-muted-foreground shadow-none data-active:text-primary data-active:after:bg-primary"
           >
             Detalhes do NFT
           </TabsTrigger>
 
           <TabsTrigger
             value="reviews"
-            className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-2 text-sm shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+            className="rounded-none border-transparent bg-transparent px-0 pb-1 text-sm text-muted-foreground shadow-none data-active:text-primary data-active:after:bg-primary"
           >
             Avaliações de colecionadores ({nft.reviews})
           </TabsTrigger>
@@ -382,28 +415,34 @@ export const NftDetailScreen = () => {
                   key={related!.id}
                   className="basis-1/2 md:basis-1/3 lg:basis-1/5"
                 >
-                  <Card className="border-0 bg-card">
-                    <CardContent className="p-3">
-                      <AspectRatio
-                        ratio={1}
-                        className="overflow-hidden rounded-lg"
-                      >
-                        <img
-                          src={related!.gallery[0]}
-                          alt={related!.name}
-                          className="h-full w-full object-cover"
-                        />
-                      </AspectRatio>
-                    </CardContent>
-                  </Card>
+                  <Link
+                    to="/nft/$id"
+                    params={{ id: related!.id }}
+                    className="block"
+                  >
+                    <Card className="border-0 bg-card">
+                      <CardContent className="p-3">
+                        <AspectRatio
+                          ratio={1}
+                          className="overflow-hidden rounded-lg"
+                        >
+                          <img
+                            src={related!.gallery[0]}
+                            alt={related!.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </AspectRatio>
+                      </CardContent>
+                    </Card>
 
-                  <p className="mt-2 text-xs">
-                    {related!.name}
-                  </p>
+                    <p className="mt-2 text-xs">
+                      {related!.name}
+                    </p>
 
-                  <p className="text-xs font-bold text-primary">
-                    {related!.price}
-                  </p>
+                    <p className="text-xs font-bold text-primary">
+                      {related!.price}
+                    </p>
+                  </Link>
                 </CarouselItem>
               ))}
             </CarouselContent>
