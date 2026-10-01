@@ -6,57 +6,69 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { AuthModal } from "@/components/login-register/AuthModal";
 
 const navLinks = ["Início", "Mercado", "Criadores", "Aprenda"];
 
-export function Header() {
+export const Header = () => {
+  const [authOpen, setAuthOpen] = useState(false);
+  
   return (
-    <header className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-4 md:px-6">
-      <span className="text-sm font-bold tracking-wide">KURIO</span>
+    <>
+      <header className="mx-auto flex h-14 max-w-[1200px] items-center justify-between px-4 md:px-6">
+        <span className="text-sm font-bold tracking-wide">KURIO</span>
 
-      <nav className="hidden gap-8 md:flex">
-        {navLinks.map((link, i) => (
-          <a
-            key={link}
-            href="#"
-            className={`border-b-2 pb-1 text-sm ${
-              i === 0
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+        <nav className="hidden gap-8 md:flex">
+          {navLinks.map((link, i) => (
+            <a
+              key={link}
+              href="#"
+              className={`border-b-2 pb-1 text-sm ${
+                i === 0
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {link}
+            </a>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" aria-label="Buscar">
+            <Search className="size-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative"
+            aria-label="Carrinho"
           >
-            {link}
-          </a>
-        ))}
-      </nav>
+            <ShoppingCart className="size-4" />
 
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" aria-label="Buscar">
-          <Search className="size-4" />
-        </Button>
+            <Badge className="absolute -right-1 -top-1 size-4 justify-center rounded-full p-0 text-[10px]">
+              1
+            </Badge>
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative"
-          aria-label="Carrinho"
-        >
-          <ShoppingCart className="size-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-primary text-primary"
+            onClick={() => setAuthOpen(true)}
+          >
+            <LogIn className="size-4" />
+            Entrar
+          </Button>
+        </div>
+      </header>
 
-          <Badge className="absolute -right-1 -top-1 size-4 justify-center rounded-full p-0 text-[10px]">
-            1
-          </Badge>
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-primary text-primary"
-        >
-          <LogIn className="size-4" />
-          Entrar
-        </Button>
-      </div>
-    </header>
+      <AuthModal
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+      />
+    </>
   );
 }
