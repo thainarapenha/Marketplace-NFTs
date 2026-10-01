@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isAxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
+import type { AuthErrorResponse } from "@/types/auth";
 import { SocialAuthButton } from "./SocialAuthButton";
 
 type AuthTab = "login" | "register";
@@ -80,6 +83,7 @@ const PasswordField = ({
 export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
   const [tab, setTab] = useState<AuthTab>("login");
   const [error, setError] = useState<string | null>(null);
+  const { login, register, isLoading } = useAuth();
 
   useEffect(() => {
     if (open) {
@@ -93,23 +97,46 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     setError(null);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const data = new FormData(event.currentTarget);
+    setError(null);
 
-    if (tab === "register") {
-      if (data.get("password") !== data.get("confirmPassword")) {
-        setError("As senhas não coincidem.");
-        return;
+    try {
+      if (tab === "register") {
+        const username = String(data.get("username") ?? "").trim();
+        const email = String(data.get("email") ?? "").trim();
+        const password = String(data.get("password") ?? "");
+        const confirmPassword = String(data.get("confirmPassword") ?? "");
+
+        if (!username || !email || !password || !confirmPassword) {
+          setError("Preencha todos os campos.");
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError("As senhas não coincidem.");
+          return;
+        }
+
+        await register({ username, email, password });
+      } else {
+        const email = String(data.get("login") ?? "").trim();
+        const password = String(data.get("password") ?? "");
+
+        if (!email || !password) {
+          setError("Informe seu usuário ou e-mail e sua senha.");
+          return;
+        }
+
+        await login({ email, password });
       }
 
-      // TODO: chamar a API de cadastro
-    } else {
-      // TODO: chamar a API de login
+      onOpenChange(false);
+    } catch (requestError) {
+      setError(getAuthErrorMessage(requestError));
     }
-
-    setError(null);
   };
 
   const fieldClass =
@@ -189,6 +216,12 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   autoComplete="current-password"
                   withToggle
                 />
+
+                {error && (
+                  <p role="alert" className="text-xs text-destructive">
+                    {error}
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -238,8 +271,13 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                 "w-full bg-primary text-base font-bold text-primary-foreground hover:bg-accent",
                 isRegister ? "mt-3 h-10" : "mt-4 h-10",
               )}
+              disabled={isLoading}
             >
-              {tab === "login" ? "Entrar" : "Criar conta"}
+              {isLoading
+                ? "Aguarde..."
+                : tab === "login"
+                  ? "Entrar"
+                  : "Criar conta"}
             </Button>
           </form>
         </div>
@@ -261,4 +299,19 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       </DialogContent>
     </Dialog>
   );
+};
+
+const getAuthErrorMessage = (error: unknown) => {
+  if (isAxiosError<AuthErrorResponse>(error)) {
+    switch (error.response?.data.code) {
+      case "INVALID_CREDENTIALS":
+        return "E-mail/usuário ou senha inválidos.";
+      case "USER_ALREADY_EXISTS":
+        return "E-mail ou nome de usuário já cadastrado.";
+      case "INVALID_DATA":
+        return error.response.data.message;
+    }
+  }
+
+  return "Não foi possível concluir a autenticação. Tente novamente.";
 };

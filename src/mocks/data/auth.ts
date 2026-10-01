@@ -7,6 +7,29 @@ interface StoredUser extends User {
 const users: StoredUser[] = [];
 const sessions: Session[] = [];
 
+const STORAGE_KEY = "marketplace-auth-mock-state";
+
+try {
+  const storedState = JSON.parse(
+    localStorage.getItem(STORAGE_KEY) ?? "null",
+  ) as { users?: StoredUser[]; sessions?: Session[] } | null;
+
+  if (storedState) {
+    users.push(...(storedState.users ?? []));
+    sessions.push(...(storedState.sessions ?? []));
+  }
+} catch {
+  // The mock starts empty when browser storage is unavailable or invalid.
+}
+
+const persistState = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ users, sessions }));
+  } catch {
+    // Persistence is best effort for the browser mock.
+  }
+};
+
 export const findUserByEmail = (email: string) =>
   users.find((user) => user.email.toLowerCase() === email.toLowerCase());
 
@@ -23,6 +46,7 @@ export const findUserByLogin = (login: string) =>
 
 export const addUser = (user: StoredUser) => {
   users.push(user);
+  persistState();
   return user;
 };
 
@@ -31,6 +55,7 @@ export const findSessionByToken = (token: string) =>
 
 export const addSession = (session: Session) => {
   sessions.push(session);
+  persistState();
   return session;
 };
 
@@ -39,6 +64,7 @@ export const removeSession = (session: Session) => {
 
   if (index >= 0) {
     sessions.splice(index, 1);
+    persistState();
   }
 };
 
