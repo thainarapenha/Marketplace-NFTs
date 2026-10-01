@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ChevronRight } from "lucide-react";
 
 import { NftImage } from "@/components/home/NftImage";
@@ -26,35 +28,152 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { getNfts } from "@/services/nft";
+
 import {
   banners,
   collections,
   features,
   img,
   networks,
-  nfts,
   posts,
 } from "@/mocks/home";
 
 export const HomeScreen = () => {
-  const price = [0.02, 12.38];
+  const defaultMinPrice = 0.02;
+const defaultMaxPrice = 12.38;
+  const itemsPerPage = 9;
 
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [price, setPrice] = useState([defaultMinPrice, defaultMaxPrice]);
+  const [sort, setSort] = useState("recent");
+  const [tab, setTab] = useState("all");
+  const [heroIndex, setHeroIndex] = useState(0);
 
-  const toggle = (name: string) =>
-    setChecked((prev) =>
-      prev.includes(name)
+  const {
+    data: nfts = [],
+    isLoading: isNftsLoading,
+    isError: isNftsError,
+  } = useQuery({
+    queryKey: ["nfts"],
+    queryFn: getNfts,
+  });
+
+  useEffect(() => {
+    if (nfts.length < 3) return;
+
+    const interval = setInterval(() => {
+      setHeroIndex((current) => (current + 1) % 3);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [nfts.length]);
+
+  const toggle = (name: string) => {
+    setChecked((prev) => {
+      const next = prev.includes(name)
         ? prev.filter((n) => n !== name)
-        : [...prev, name],
-    );
+        : [...prev, name];
+
+      setPage(1);
+
+      return next;
+    });
+  };
+
+  const filteredNfts = useMemo(() => {
+    const filtered = nfts.filter((nft) => {
+      const numericPrice = Number.parseFloat(nft.price);
+
+      const matchesCollection =
+        checked.length === 0 || checked.includes(nft.collection);
+
+      const matchesPrice =
+        numericPrice >= price[0] && numericPrice <= price[1];
+
+      return matchesCollection && matchesPrice;
+    });
+
+    if (sort === "low") {
+      return [...filtered].sort(
+        (a, b) =>
+          Number.parseFloat(a.price) - Number.parseFloat(b.price),
+      );
+    }
+
+    if (sort === "high") {
+      return [...filtered].sort(
+        (a, b) =>
+          Number.parseFloat(b.price) - Number.parseFloat(a.price),
+      );
+    }
+
+    return filtered;
+  }, [nfts, checked, price, sort]);
+
+  const tabNfts = useMemo(() => {
+    if (tab === "new") {
+      return [...filteredNfts].sort(
+        (a, b) => Number(b.id) - Number(a.id),
+      );
+    }
+
+    if (tab === "hot") {
+      return [...filteredNfts].sort((a, b) => b.reviews - a.reviews);
+    }
+
+    return filteredNfts;
+  }, [filteredNfts, tab]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(tabNfts.length / itemsPerPage),
+  );
+
+  const currentPage = Math.min(page, totalPages);
+
+  const paginatedNfts = tabNfts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const goToPage = (nextPage: number) => {
+    setPage(Math.min(Math.max(nextPage, 1), totalPages));
+  };
+
+  const collectionOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    nfts.forEach((nft) => {
+      counts.set(nft.collection, (counts.get(nft.collection) ?? 0) + 1);
+    });
+
+    return Array.from(counts.entries());
+  }, [nfts]);
+
+  const priceRange = useMemo(() => {
+    if (nfts.length === 0) {
+      return {
+        min: defaultMinPrice,
+        max: defaultMaxPrice,
+      };
+    }
+
+    const prices = nfts.map((nft) => Number.parseFloat(nft.price));
+
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [nfts]);
 
   return (
     <main className="mx-auto max-w-[1200px] px-4 md:px-6">
       {/* ---------- Hero ---------- */}
 
-      <section className="mt-2 grid items-center gap-6 rounded-2xl md:grid-cols-2">
-        <div className="space-y-5 py-8 md:pl-10">
+      <section className="mt-2 grid items-stretch gap-6 rounded-2xl md:grid-cols-[6fr_4fr]">
+        <div className="flex flex-col justify-center space-y-5 py-8 md:pl-10">
           <p className="text-xs text-muted-foreground">
             Bem-vindo à Kurio
           </p>
@@ -69,23 +188,38 @@ export const HomeScreen = () => {
             cultura da internet.
           </p>
 
-          <Button>EXPLORAR</Button>
+          <Button className="self-start">EXPLORAR</Button>
 
           <div className="flex gap-1.5 pt-4 md:pl-[70%]">
-            <span className="size-1.5 rounded-full bg-primary" />
-            <span className="size-1.5 rounded-full bg-primary/60" />
-            <span className="size-1.5 rounded-full bg-primary/60" />
+            {nfts.slice(0, 3).map((nft, index) => (
+              <button
+                key={nft.id}
+                type="button"
+                aria-label={`Exibir ${nft.name}`}
+                onClick={() => setHeroIndex(index)}
+                className={`size-1.5 rounded-full transition-opacity ${
+                  heroIndex === index ? "bg-primary" : "bg-primary/60"
+                }`}
+              />
+            ))}
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-3xl">
-          <AspectRatio ratio={1}>
+        <div className="relative min-h-[420px] overflow-hidden rounded-3xl md:min-h-0">
+          {nfts.slice(0, 3).map((nft, index) => (
             <img
-              src={img(1)}
-              alt="NFT em destaque"
-              className="h-full w-full object-cover"
+              key={nft.id}
+              src={nft.gallery[0]}
+              alt={nft.name}
+              className={`absolute inset-0 h-full w-full object-cover transition-all duration-700 ${
+                heroIndex === index
+                  ? "translate-x-0 opacity-100"
+                  : index < heroIndex
+                    ? "-translate-x-full opacity-0"
+                    : "translate-x-full opacity-0"
+              }`}
             />
-          </AspectRatio>
+          ))}
         </div>
       </section>
 
@@ -99,7 +233,7 @@ export const HomeScreen = () => {
                 <h3 className="mb-3 text-sm font-semibold">Coleções</h3>
 
                 <ul className="space-y-2.5">
-                  {collections.map(([name, count]) => (
+                  {collectionOptions.map(([name, count]) => (
                     <li
                       key={name}
                       className="flex items-center justify-between text-xs"
@@ -109,6 +243,7 @@ export const HomeScreen = () => {
                           checked={checked.includes(name)}
                           onCheckedChange={() => toggle(name)}
                         />
+
                         {name}
                       </label>
 
@@ -126,17 +261,27 @@ export const HomeScreen = () => {
                 <h3 className="text-sm font-semibold">Faixa de preço</h3>
 
                 <Slider
-                  min={0.02}
-                  max={12.38}
+                  min={defaultMinPrice}
+                  max={defaultMaxPrice}
                   step={0.01}
                   value={price}
+                  onValueChange={(value) => {
+                    if (!Array.isArray(value)) return;
+
+                    setPrice([...value]);
+                    setPage(1);
+                  }}
                 />
 
                 <p className="text-xs text-muted-foreground">
                   Preço: {price[0].toFixed(2)} - {price[1].toFixed(2)} ETH
                 </p>
 
-                <Button size="sm" className="h-7 text-xs">
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setPage(1)}
+                >
                   Aplicar
                 </Button>
               </div>
@@ -153,6 +298,7 @@ export const HomeScreen = () => {
                       className="flex justify-between text-xs"
                     >
                       <span className="text-muted-foreground">{name}</span>
+
                       <span className="text-muted-foreground">
                         ({count})
                       </span>
@@ -163,31 +309,47 @@ export const HomeScreen = () => {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 bg-secondary">
-            <CardContent className="p-0">
-              <div className="space-y-1 p-3">
-                <p className="text-sm font-bold text-primary">
-                  NFT EM DESTAQUE
-                </p>
+          {nfts[0] && (
+            <Card className="overflow-hidden border-0 bg-secondary">
+              <CardContent className="p-0">
+                <div className="space-y-1 p-3">
+                  <p className="text-sm font-bold text-primary">
+                    NFT EM DESTAQUE
+                  </p>
 
-                <p className="text-xs font-semibold">OFERTA LIMITADA</p>
-              </div>
+                  <p className="text-xs font-semibold">{nfts[0].name}</p>
+                </div>
 
-              <AspectRatio ratio={4 / 5}>
-                <img
-                  src={img(2)}
-                  alt="NFT em destaque"
-                  className="h-full w-full object-cover"
-                />
-              </AspectRatio>
-            </CardContent>
-          </Card>
+                <AspectRatio ratio={4 / 5}>
+                  <Link
+                    to="/nft/$id"
+                    params={{ id: nfts[0].id }}
+                    className="block h-full"
+                  >
+                    <img
+                      src={nfts[0].gallery[0]}
+                      alt={nfts[0].name}
+                      className="h-full w-full object-cover"
+                    />
+                  </Link>
+                </AspectRatio>
+              </CardContent>
+            </Card>
+          )}
         </aside>
 
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Tabs defaultValue="all">
-              <TabsList className="h-auto gap-4 bg-transparent p-0">
+            <Tabs
+              value={tab}
+              onValueChange={(value) => {
+                if (!value) return;
+
+                setTab(value);
+                setPage(1);
+              }}
+            >
+              <TabsList variant="line" className="h-auto gap-4 bg-transparent p-0">
                 {[
                   ["all", "Todos os NFTs"],
                   ["new", "Novos lançamentos"],
@@ -196,7 +358,7 @@ export const HomeScreen = () => {
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="rounded-none border-b-2 border-transparent bg-transparent px-0 pb-1 text-xs text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary"
+                    className="rounded-none border-transparent bg-transparent px-0 pb-1 text-xs text-muted-foreground shadow-none data-active:text-[#E89B55] data-active:after:bg-[#E89B55]"
                   >
                     {label}
                   </TabsTrigger>
@@ -207,7 +369,15 @@ export const HomeScreen = () => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               Ordenar por:
 
-              <Select defaultValue="recent">
+              <Select
+                value={sort}
+                onValueChange={(value) => {
+                  if (!value) return;
+
+                  setSort(value);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="h-8 w-[170px] border-0 bg-transparent text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -225,61 +395,101 @@ export const HomeScreen = () => {
             </div>
           </div>
 
+          {/* ---------- NFT Grid ---------- */}
+
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {nfts.map((nft, i) => (
-              <Card key={i} className="border-0 bg-card">
-                <CardContent className="space-y-3 p-3">
-                  <NftImage src={nft.img} alt={nft.name} />
+            {isNftsLoading && (
+              <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                Carregando NFTs...
+              </div>
+            )}
 
-                  <div>
-                    <p className="text-xs">{nft.name}</p>
+            {isNftsError && (
+              <div className="col-span-full py-12 text-center text-sm text-destructive">
+                Não foi possível carregar os NFTs.
+              </div>
+            )}
 
-                    <p className="mt-1 text-xs font-semibold text-primary">
-                      {nft.price}
+            {!isNftsLoading &&
+              !isNftsError &&
+              paginatedNfts.length === 0 && (
+                <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                  Nenhum NFT encontrado com os filtros selecionados.
+                </div>
+              )}
 
-                      {nft.old && (
-                        <span className="ml-2 font-normal text-muted-foreground line-through">
-                          {nft.old}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {!isNftsLoading &&
+              !isNftsError &&
+              paginatedNfts.map((nft) => (
+                <Link
+                  key={nft.id}
+                  to="/nft/$id"
+                  params={{ id: nft.id }}
+                  className="block"
+                >
+                  <Card className="border-0 bg-card transition-opacity hover:opacity-90">
+                    <CardContent className="space-y-3 p-3">
+                      <NftImage
+                        src={nft.gallery[0]}
+                        alt={nft.name}
+                      />
+
+                      <div>
+                        <p className="text-xs">{nft.name}</p>
+
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          {nft.price}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
           </div>
 
-          <Pagination className="mt-8 justify-end">
-            <PaginationContent>
-              {[1, 2, 3, 4].map((n) => (
-                <PaginationItem key={n}>
-                  <PaginationLink
-                    href="#"
-                    size="icon"
-                    isActive={page === n}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setPage(n);
-                    }}
-                    className={
-                      page === n
-                        ? "border-0 bg-accent text-accent-foreground"
-                        : "border-0 bg-card"
-                    }
-                  >
-                    {n}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+          {/* ---------- Pagination ---------- */}
 
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  className="border-0 bg-card [&>span]:hidden"
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+          {!isNftsLoading && !isNftsError && totalPages > 1 && (
+            <Pagination className="mt-8 justify-end">
+              <PaginationContent>
+                {Array.from({ length: totalPages }, (_, index) => {
+                  const pageNumber = index + 1;
+
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        href="#"
+                        size="icon"
+                        isActive={currentPage === pageNumber}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          goToPage(pageNumber);
+                        }}
+                        className={
+                          currentPage === pageNumber
+                            ? "border-0 bg-accent text-accent-foreground"
+                            : "border-0 bg-card"
+                        }
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToPage(currentPage + 1);
+                    }}
+                    className="border-0 bg-card [&>span]:hidden"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </section>
 
