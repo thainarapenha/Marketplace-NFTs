@@ -6,6 +6,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { queryClient } from "./lib/queryClient";
 import { router } from "./router";
 import "./index.css";
+import { CartProvider } from "./lib/cart";
 
 async function enableMocking() {
   if (!import.meta.env.DEV) {
@@ -21,7 +22,9 @@ enableMocking().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
       </QueryClientProvider>
     </StrictMode>,
   );
