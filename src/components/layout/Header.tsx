@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   LogIn,
+  LogOut,
   Search,
   ShoppingCart,
 } from "lucide-react";
@@ -9,6 +10,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { AuthModal } from "@/components/login-register/AuthModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 
 const navLinks = [
@@ -35,6 +37,7 @@ export const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
   const { items } = useCart();
 
   const cartItemCount = items.reduce(
@@ -47,6 +50,11 @@ export const Header = () => {
     location.pathname === "/checkout" ||
     location.pathname.startsWith("/nft/") ||
     location.pathname.startsWith("/order/");
+
+  const handleLogout = async () => {
+    setAuthOpen(false);
+    await logout();
+  };
 
   return (
     <>
@@ -104,14 +112,32 @@ export const Header = () => {
             )}
           </Button>
 
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground hover:bg-accent"
-            onClick={() => setAuthOpen(true)}
-          >
-            <LogIn className="size-4" />
-            Entrar
-          </Button>
+          {isAuthenticated && user ? (
+            <>
+              <span className="hidden text-sm text-muted-foreground sm:inline">
+                {user.username}
+              </span>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                disabled={isLoading}
+              >
+                <LogOut className="size-4" />
+                Sair
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              className="bg-primary text-primary-foreground hover:bg-accent"
+              onClick={() => setAuthOpen(true)}
+            >
+              <LogIn className="size-4" />
+              Entrar
+            </Button>
+          )}
         </div>
       </header>
 
