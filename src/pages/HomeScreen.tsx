@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -40,10 +40,15 @@ import {
 } from "@/mocks/home";
 
 export const HomeScreen = () => {
-  const price = [0.02, 12.38];
+  const minPrice = 0.02;
+  const maxPrice = 12.38;
+  const itemsPerPage = 9;
 
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [price, setPrice] = useState([minPrice, maxPrice]);
+  const [sort, setSort] = useState("recent");
+  const [tab, setTab] = useState("all");
 
   const {
     data: nfts = [],
@@ -54,12 +59,77 @@ export const HomeScreen = () => {
     queryFn: getNfts,
   });
 
-  const toggle = (name: string) =>
-    setChecked((prev) =>
-      prev.includes(name)
+  const toggle = (name: string) => {
+    setChecked((prev) => {
+      const next = prev.includes(name)
         ? prev.filter((n) => n !== name)
-        : [...prev, name],
-    );
+        : [...prev, name];
+
+      setPage(1);
+
+      return next;
+    });
+  };
+
+  const filteredNfts = useMemo(() => {
+    const filtered = nfts.filter((nft) => {
+      const numericPrice = Number.parseFloat(nft.price);
+
+      const matchesCollection =
+        checked.length === 0 || checked.includes(nft.collection);
+
+      const matchesPrice =
+        numericPrice >= price[0] && numericPrice <= price[1];
+
+      return matchesCollection && matchesPrice;
+    });
+
+    if (sort === "low") {
+      return [...filtered].sort(
+        (a, b) =>
+          Number.parseFloat(a.price) - Number.parseFloat(b.price),
+      );
+    }
+
+    if (sort === "high") {
+      return [...filtered].sort(
+        (a, b) =>
+          Number.parseFloat(b.price) - Number.parseFloat(a.price),
+      );
+    }
+
+    return filtered;
+  }, [nfts, checked, price, sort]);
+
+  const tabNfts = useMemo(() => {
+    if (tab === "new") {
+      return [...filteredNfts].sort(
+        (a, b) => Number(b.id) - Number(a.id),
+      );
+    }
+
+    if (tab === "hot") {
+      return [...filteredNfts].sort((a, b) => b.reviews - a.reviews);
+    }
+
+    return filteredNfts;
+  }, [filteredNfts, tab]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(tabNfts.length / itemsPerPage),
+  );
+
+  const currentPage = Math.min(page, totalPages);
+
+  const paginatedNfts = tabNfts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const goToPage = (nextPage: number) => {
+    setPage(Math.min(Math.max(nextPage, 1), totalPages));
+  };
 
   return (
     <main className="mx-auto max-w-[1200px] px-4 md:px-6">
@@ -121,6 +191,7 @@ export const HomeScreen = () => {
                           checked={checked.includes(name)}
                           onCheckedChange={() => toggle(name)}
                         />
+
                         {name}
                       </label>
 
@@ -138,17 +209,27 @@ export const HomeScreen = () => {
                 <h3 className="text-sm font-semibold">Faixa de preço</h3>
 
                 <Slider
-                  min={0.02}
-                  max={12.38}
+                  min={minPrice}
+                  max={maxPrice}
                   step={0.01}
                   value={price}
+                  onValueChange={(value) => {
+                    if (!Array.isArray(value)) return;
+
+                    setPrice([...value]);
+                    setPage(1);
+                  }}
                 />
 
                 <p className="text-xs text-muted-foreground">
                   Preço: {price[0].toFixed(2)} - {price[1].toFixed(2)} ETH
                 </p>
 
-                <Button size="sm" className="h-7 text-xs">
+                <Button
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setPage(1)}
+                >
                   Aplicar
                 </Button>
               </div>
@@ -165,6 +246,7 @@ export const HomeScreen = () => {
                       className="flex justify-between text-xs"
                     >
                       <span className="text-muted-foreground">{name}</span>
+
                       <span className="text-muted-foreground">
                         ({count})
                       </span>
@@ -198,7 +280,13 @@ export const HomeScreen = () => {
 
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <Tabs defaultValue="all">
+            <Tabs
+              value={tab}
+              onValueChange={(value) => {
+                setTab(value);
+                setPage(1);
+              }}
+            >
               <TabsList className="h-auto gap-4 bg-transparent p-0">
                 {[
                   ["all", "Todos os NFTs"],
@@ -219,7 +307,15 @@ export const HomeScreen = () => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               Ordenar por:
 
-              <Select defaultValue="recent">
+              <Select
+                value={sort}
+                onValueChange={(value) => {
+                  if (!value) return;
+
+                  setSort(value);
+                  setPage(1);
+                }}
+              >
                 <SelectTrigger className="h-8 w-[170px] border-0 bg-transparent text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -237,6 +333,8 @@ export const HomeScreen = () => {
             </div>
           </div>
 
+          {/* ---------- NFT Grid ---------- */}
+
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
             {isNftsLoading && (
               <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
@@ -252,7 +350,15 @@ export const HomeScreen = () => {
 
             {!isNftsLoading &&
               !isNftsError &&
-              nfts.map((nft) => (
+              paginatedNfts.length === 0 && (
+                <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                  Nenhum NFT encontrado com os filtros selecionados.
+                </div>
+              )}
+
+            {!isNftsLoading &&
+              !isNftsError &&
+              paginatedNfts.map((nft) => (
                 <Link
                   key={nft.id}
                   to="/nft/$id"
@@ -279,37 +385,49 @@ export const HomeScreen = () => {
               ))}
           </div>
 
-          <Pagination className="mt-8 justify-end">
-            <PaginationContent>
-              {[1, 2, 3, 4].map((n) => (
-                <PaginationItem key={n}>
-                  <PaginationLink
-                    href="#"
-                    size="icon"
-                    isActive={page === n}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setPage(n);
-                    }}
-                    className={
-                      page === n
-                        ? "border-0 bg-accent text-accent-foreground"
-                        : "border-0 bg-card"
-                    }
-                  >
-                    {n}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+          {/* ---------- Pagination ---------- */}
 
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  className="border-0 bg-card [&>span]:hidden"
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+          {!isNftsLoading && !isNftsError && totalPages > 1 && (
+            <Pagination className="mt-8 justify-end">
+              <PaginationContent>
+                {Array.from({ length: totalPages }, (_, index) => {
+                  const pageNumber = index + 1;
+
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        href="#"
+                        size="icon"
+                        isActive={currentPage === pageNumber}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          goToPage(pageNumber);
+                        }}
+                        className={
+                          currentPage === pageNumber
+                            ? "border-0 bg-accent text-accent-foreground"
+                            : "border-0 bg-card"
+                        }
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  );
+                })}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      goToPage(currentPage + 1);
+                    }}
+                    className="border-0 bg-card [&>span]:hidden"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
         </div>
       </section>
 

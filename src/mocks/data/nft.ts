@@ -1,255 +1,289 @@
 import type { Nft } from "@/types/nft";
 
-const img = (id: number) => `/images/nft-${id}.jpg`;
+const img = (id: number) => {
+  const backgrounds = [
+    "#111827",
+    "#312e81",
+    "#581c87",
+    "#7c2d12",
+    "#854d0e",
+    "#164e63",
+    "#14532d",
+    "#701a75",
+  ];
+
+  const background = backgrounds[(id - 1) % backgrounds.length];
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+      <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${background}"/>
+          <stop offset="100%" stop-color="#020617"/>
+        </linearGradient>
+      </defs>
+
+      <rect width="800" height="800" fill="url(#gradient)"/>
+      <circle cx="${180 + (id * 37) % 420}" cy="${180 + (id * 53) % 420}" r="${100 + (id * 13) % 100}" fill="white" opacity="0.12"/>
+      <circle cx="${520 - (id * 29) % 300}" cy="${520 - (id * 41) % 300}" r="${70 + (id * 17) % 90}" fill="white" opacity="0.08"/>
+
+      <text
+        x="400"
+        y="390"
+        text-anchor="middle"
+        fill="white"
+        font-family="Arial, sans-serif"
+        font-size="96"
+        font-weight="700"
+      >
+        #${String(id).padStart(2, "0")}
+      </text>
+
+      <text
+        x="400"
+        y="470"
+        text-anchor="middle"
+        fill="white"
+        opacity="0.65"
+        font-family="Arial, sans-serif"
+        font-size="28"
+      >
+        NFT COLLECTION
+      </text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
+
+const createNft = ({
+  id,
+  name,
+  collection,
+  price,
+  attributes,
+  description,
+}: {
+  id: number;
+  name: string;
+  collection: string;
+  price: string;
+  attributes: string[];
+  description: string;
+}): Nft => ({
+  id: String(id),
+  name,
+  collection,
+  price,
+  gallery: [img(id), img(id), img(id), img(id)],
+  description,
+  editions: ["1/25", "1/50", "1/100"],
+  defaultEdition: "1/50",
+  reviews: 10 + id,
+  attributes,
+  details: [
+    {
+      label: "ID do token",
+      text: `#${String(id).padStart(4, "0")}`,
+    },
+    {
+      label: "Coleção",
+      text: collection,
+    },
+    {
+      label: "Atributos",
+      text: attributes.join(", "),
+    },
+  ],
+  fullDescription: [
+    `${name} é uma obra digital da coleção ${collection}, criada para colecionadores e registrada como um ativo digital exclusivo.`,
+    "A peça possui diferentes edições disponíveis e registro de procedência associado ao token.",
+  ],
+  features: [
+    {
+      letter: "A",
+      title: "Arte exclusiva",
+      text: "Obras digitais produzidas para colecionadores.",
+    },
+    {
+      letter: "B",
+      title: "Autenticidade",
+      text: "Registro e procedência vinculados ao token.",
+    },
+    {
+      letter: "C",
+      title: "Colecionável",
+      text: "Itens digitais exclusivos para sua coleção.",
+    },
+  ],
+  relatedIds: [],
+});
 
 export const nfts: Nft[] = [
-  {
-    id: "1",
+  createNft({
+    id: 1,
     name: "Emerald Ape #001",
     collection: "Kurio Apes",
     price: "0.99 ETH",
-    gallery: [img(1), img(1), img(1), img(1)],
-    description:
-      "Um colecionável digital finalizado à mão da coleção Kurio Apes, verificado na Ethereum, com arte desbloqueável e acesso para colecionadores.",
-    editions: ["1/50", "1/100", "1/250"],
-    defaultEdition: "1/50",
-    reviews: 19,
     attributes: ["Óculos", "Esmeralda", "Raro"],
-    details: [
-      {
-        label: "ID do token",
-        text: "#0001",
-      },
-      {
-        label: "Coleção",
-        text: "Kurio Apes",
-      },
-      {
-        label: "Atributos",
-        text: "Óculos, Esmeralda, Raro",
-      },
-    ],
-    fullDescription: [
-      "Emerald Ape #001 é uma obra digital 1/50 finalizada à mão da coleção Kurio Apes. Cada atributo fica armazenado nos metadados do token e verificado na Ethereum.",
-      "A propriedade inclui arte em alta resolução, lançamentos exclusivos para colecionadores e um registro permanente de procedência registrada na rede.",
-    ],
-    features: [
-      {
-        letter: "A",
-        title: "Arte exclusiva",
-        text: "Obras digitais produzidas para colecionadores.",
-      },
-      {
-        letter: "B",
-        title: "Autenticidade",
-        text: "Registro e procedência vinculados ao token.",
-      },
-      {
-        letter: "C",
-        title: "Colecionável",
-        text: "Itens digitais exclusivos para sua coleção.",
-      },
-    ],
-    relatedIds: ["2", "3", "4", "5"],
-  },
+    description:
+      "Um colecionável digital da coleção Kurio Apes, com arte exclusiva e edição limitada.",
+  }),
 
-  {
-    id: "2",
+  createNft({
+    id: 2,
     name: "Cosmic Bloom #002",
     collection: "Kurio Editions",
     price: "1.29 ETH",
-    gallery: [img(2), img(2), img(2), img(2)],
-    description:
-      "Uma composição digital inspirada em formas orgânicas e ambientes cósmicos, criada para a coleção Kurio Editions.",
-    editions: ["1/25", "1/50", "1/100"],
-    defaultEdition: "1/50",
-    reviews: 14,
     attributes: ["Cosmic", "Floral", "Premium"],
-    details: [
-      {
-        label: "ID do token",
-        text: "#0002",
-      },
-      {
-        label: "Coleção",
-        text: "Kurio Editions",
-      },
-      {
-        label: "Atributos",
-        text: "Cosmic, Floral, Premium",
-      },
-    ],
-    fullDescription: [
-      "Cosmic Bloom #002 combina formas orgânicas e elementos cósmicos em uma composição digital criada para a coleção Kurio Editions.",
-      "A obra possui registro digital de procedência e acesso à versão em alta resolução para colecionadores.",
-    ],
-    features: [
-      {
-        letter: "A",
-        title: "Arte exclusiva",
-        text: "Obras digitais produzidas para colecionadores.",
-      },
-      {
-        letter: "B",
-        title: "Autenticidade",
-        text: "Registro e procedência vinculados ao token.",
-      },
-      {
-        letter: "C",
-        title: "Colecionável",
-        text: "Itens digitais exclusivos para sua coleção.",
-      },
-    ],
-    relatedIds: ["1", "3", "4", "5"],
-  },
+    description:
+      "Uma composição digital inspirada em formas orgânicas e ambientes cósmicos.",
+  }),
 
-  {
-    id: "3",
+  createNft({
+    id: 3,
     name: "Violet Nomad #003",
     collection: "Nomad Series",
     price: "1.39 ETH",
-    gallery: [img(3), img(3), img(3), img(3)],
-    description:
-      "Uma peça digital da Nomad Series que explora identidade, movimento e descoberta em ambientes digitais.",
-    editions: ["1/25", "1/75", "1/150"],
-    defaultEdition: "1/75",
-    reviews: 22,
     attributes: ["Violeta", "Nomad", "Explorer"],
-    details: [
-      {
-        label: "ID do token",
-        text: "#0003",
-      },
-      {
-        label: "Coleção",
-        text: "Nomad Series",
-      },
-      {
-        label: "Atributos",
-        text: "Violeta, Nomad, Explorer",
-      },
-    ],
-    fullDescription: [
-      "Violet Nomad #003 é uma obra digital da Nomad Series dedicada à exploração de identidade e movimento em ambientes digitais.",
-      "A peça foi criada para integrar uma coleção de obras independentes com registro permanente de procedência.",
-    ],
-    features: [
-      {
-        letter: "A",
-        title: "Arte exclusiva",
-        text: "Obras digitais produzidas para colecionadores.",
-      },
-      {
-        letter: "B",
-        title: "Autenticidade",
-        text: "Registro e procedência vinculados ao token.",
-      },
-      {
-        letter: "C",
-        title: "Colecionável",
-        text: "Itens digitais exclusivos para sua coleção.",
-      },
-    ],
-    relatedIds: ["1", "2", "4", "5"],
-  },
+    description:
+      "Uma peça digital que explora identidade, movimento e descoberta.",
+  }),
 
-  {
-    id: "4",
+  createNft({
+    id: 4,
     name: "Ivory Baron #004",
     collection: "Ivory Collection",
     price: "1.79 ETH",
-    gallery: [img(4), img(4), img(4), img(4)],
-    description:
-      "Um colecionável digital de edição limitada inspirado em estética clássica e elementos contemporâneos.",
-    editions: ["1/10", "1/25", "1/50"],
-    defaultEdition: "1/25",
-    reviews: 31,
     attributes: ["Ivory", "Classic", "Limited"],
-    details: [
-      {
-        label: "ID do token",
-        text: "#0004",
-      },
-      {
-        label: "Coleção",
-        text: "Ivory Collection",
-      },
-      {
-        label: "Atributos",
-        text: "Ivory, Classic, Limited",
-      },
-    ],
-    fullDescription: [
-      "Ivory Baron #004 apresenta uma composição digital de edição limitada que combina referências clássicas com elementos contemporâneos.",
-      "A edição foi desenvolvida para colecionadores que buscam peças com tiragem reduzida e identidade visual marcante.",
-    ],
-    features: [
-      {
-        letter: "A",
-        title: "Arte exclusiva",
-        text: "Obras digitais produzidas para colecionadores.",
-      },
-      {
-        letter: "B",
-        title: "Autenticidade",
-        text: "Registro e procedência vinculados ao token.",
-      },
-      {
-        letter: "C",
-        title: "Colecionável",
-        text: "Itens digitais exclusivos para sua coleção.",
-      },
-    ],
-    relatedIds: ["1", "2", "3", "5"],
-  },
+    description:
+      "Um colecionável digital de edição limitada inspirado em estética clássica.",
+  }),
 
-  {
-    id: "5",
+  createNft({
+    id: 5,
     name: "Golden Beat #005",
     collection: "Golden Series",
     price: "0.99 ETH",
-    gallery: [img(5), img(5), img(5), img(5)],
-    description:
-      "Uma obra digital vibrante da Golden Series que combina ritmo, cor e elementos gráficos contemporâneos.",
-    editions: ["1/50", "1/100", "1/200"],
-    defaultEdition: "1/100",
-    reviews: 17,
     attributes: ["Golden", "Beat", "Dynamic"],
-    details: [
-      {
-        label: "ID do token",
-        text: "#0005",
-      },
-      {
-        label: "Coleção",
-        text: "Golden Series",
-      },
-      {
-        label: "Atributos",
-        text: "Golden, Beat, Dynamic",
-      },
-    ],
-    fullDescription: [
-      "Golden Beat #005 é uma obra digital vibrante que combina ritmo, cor e elementos gráficos contemporâneos.",
-      "A peça integra a Golden Series e possui diferentes edições disponíveis para colecionadores.",
-    ],
-    features: [
-      {
-        letter: "A",
-        title: "Arte exclusiva",
-        text: "Obras digitais produzidas para colecionadores.",
-      },
-      {
-        letter: "B",
-        title: "Autenticidade",
-        text: "Registro e procedência vinculados ao token.",
-      },
-      {
-        letter: "C",
-        title: "Colecionável",
-        text: "Itens digitais exclusivos para sua coleção.",
-      },
-    ],
-    relatedIds: ["1", "2", "3", "4"],
-  },
+    description:
+      "Uma obra digital vibrante que combina ritmo, cor e elementos gráficos.",
+  }),
+
+  createNft({
+    id: 6,
+    name: "Neon Oracle #006",
+    collection: "Future Icons",
+    price: "2.10 ETH",
+    attributes: ["Neon", "Oracle", "Rare"],
+    description:
+      "Uma peça futurista inspirada em interfaces digitais e estética neon.",
+  }),
+
+  createNft({
+    id: 7,
+    name: "Azure Dream #007",
+    collection: "Dreamscape",
+    price: "0.75 ETH",
+    attributes: ["Azure", "Dream", "Blue"],
+    description:
+      "Uma composição digital baseada em formas abstratas e atmosferas oníricas.",
+  }),
+
+  createNft({
+    id: 8,
+    name: "Crimson Fox #008",
+    collection: "Wild Digital",
+    price: "1.55 ETH",
+    attributes: ["Crimson", "Fox", "Wild"],
+    description:
+      "Um colecionável inspirado em animais e estética digital contemporânea.",
+  }),
+
+  createNft({
+    id: 9,
+    name: "Solar Child #009",
+    collection: "Solar Series",
+    price: "2.49 ETH",
+    attributes: ["Solar", "Gold", "Rare"],
+    description:
+      "Uma obra digital inspirada em luz, energia e formas solares.",
+  }),
+
+  createNft({
+    id: 10,
+    name: "Digital Monk #010",
+    collection: "Digital Souls",
+    price: "1.15 ETH",
+    attributes: ["Monk", "Minimal", "Soul"],
+    description:
+      "Uma representação digital minimalista focada em identidade e contemplação.",
+  }),
+
+  createNft({
+    id: 11,
+    name: "Pink Mirage #011",
+    collection: "Dreamscape",
+    price: "0.89 ETH",
+    attributes: ["Pink", "Mirage", "Soft"],
+    description:
+      "Uma composição abstrata baseada em cores suaves e formas fluidas.",
+  }),
+
+  createNft({
+    id: 12,
+    name: "Obsidian King #012",
+    collection: "Royal Digital",
+    price: "3.20 ETH",
+    attributes: ["Obsidian", "King", "Rare"],
+    description:
+      "Uma peça de edição limitada com estética sombria e elementos premium.",
+  }),
+
+  createNft({
+    id: 13,
+    name: "Electric Mind #013",
+    collection: "Future Icons",
+    price: "1.65 ETH",
+    attributes: ["Electric", "Mind", "Cyber"],
+    description:
+      "Uma obra digital inspirada em tecnologia, inteligência e cultura cyber.",
+  }),
+
+  createNft({
+    id: 14,
+    name: "Forest Spirit #014",
+    collection: "Nature Digital",
+    price: "0.69 ETH",
+    attributes: ["Forest", "Spirit", "Nature"],
+    description:
+      "Uma representação digital inspirada em elementos naturais e ambientes florestais.",
+  }),
+
+  createNft({
+    id: 15,
+    name: "Platinum Rider #015",
+    collection: "Velocity",
+    price: "2.75 ETH",
+    attributes: ["Platinum", "Rider", "Velocity"],
+    description:
+      "Uma peça digital inspirada em velocidade, movimento e estética futurista.",
+  }),
+
+  createNft({
+    id: 16,
+    name: "Purple Genesis #016",
+    collection: "Genesis Collection",
+    price: "1.95 ETH",
+    attributes: ["Purple", "Genesis", "Premium"],
+    description:
+      "Uma obra digital premium criada para representar novos começos no universo digital.",
+  }),
 ];
+
+nfts.forEach((nft) => {
+  nft.relatedIds = nfts
+    .filter((related) => related.id !== nft.id)
+    .slice(0, 4)
+    .map((related) => related.id);
+});
