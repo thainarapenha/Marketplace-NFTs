@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "@tanstack/react-router";
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Heart,
@@ -11,11 +15,11 @@ import {
 } from "lucide-react";
 
 import { getNftById, getNfts } from "@/services/nft";
+import { useCart } from "@/lib/cart";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Breadcrumb,
@@ -31,13 +35,21 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 /* ---------- Tela ---------- */
 export const NftDetailScreen = () => {
   const { id } = useParams({
     from: "/nft/$id",
   });
+
+  const navigate = useNavigate();
+  const { addItem } = useCart();
 
   const [selected, setSelected] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -69,7 +81,9 @@ export const NftDetailScreen = () => {
     if (!nft || !nfts) return [];
 
     return nft.relatedIds
-      .map((relatedId) => nfts.find((item) => item.id === relatedId))
+      .map((relatedId) =>
+        nfts.find((item) => item.id === relatedId),
+      )
       .filter(Boolean);
   }, [nft, nfts]);
 
@@ -175,7 +189,10 @@ export const NftDetailScreen = () => {
         {/* Imagem principal */}
         <Card className="relative order-1 border-0 bg-card lg:order-2">
           <CardContent className="p-3">
-            <AspectRatio ratio={1} className="overflow-hidden rounded-xl">
+            <AspectRatio
+              ratio={1}
+              className="overflow-hidden rounded-xl"
+            >
               <img
                 src={nft.gallery[selected]}
                 alt={nft.name}
@@ -261,7 +278,9 @@ export const NftDetailScreen = () => {
                 className="size-8 rounded-full"
                 aria-label="Diminuir quantidade"
                 onClick={() =>
-                  setQuantity((value) => Math.max(1, value - 1))
+                  setQuantity((value) =>
+                    Math.max(1, value - 1),
+                  )
                 }
               >
                 <Minus className="size-4" />
@@ -284,7 +303,21 @@ export const NftDetailScreen = () => {
             </div>
 
             <div className="flex gap-3">
-              <Button size="sm" className="text-xs">
+              <Button
+                size="sm"
+                className="text-xs"
+                onClick={() => {
+                  addItem(
+                    nft,
+                    currentEdition,
+                    quantity,
+                  );
+
+                  navigate({
+                    to: "/cart",
+                  });
+                }}
+              >
                 COMPRAR
               </Button>
 
@@ -450,68 +483,25 @@ export const NftDetailScreen = () => {
 
           {dots > 1 && (
             <div className="mt-6 flex justify-center gap-2">
-              {Array.from({ length: dots }).map((_, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  aria-label={`Ir para o slide ${index + 1}`}
-                  onClick={() => api?.scrollTo(index)}
-                  className={`size-2.5 rounded-full border border-primary ${
-                    dot === index
-                      ? "bg-primary"
-                      : "bg-transparent"
-                  }`}
-                />
-              ))}
+              {Array.from({ length: dots }).map(
+                (_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    aria-label={`Ir para o slide ${index + 1}`}
+                    onClick={() => api?.scrollTo(index)}
+                    className={`size-2.5 rounded-full border border-primary ${
+                      dot === index
+                        ? "bg-primary"
+                        : "bg-transparent"
+                    }`}
+                  />
+                ),
+              )}
             </div>
           )}
         </section>
       )}
-
-      {/* ===== Features + Newsletter ===== */}
-      <section className="mt-16 grid gap-6 rounded-lg bg-card p-6 md:grid-cols-4">
-        {nft.features.map((feature) => (
-          <div
-            key={feature.title}
-            className="space-y-2 md:border-r md:border-border md:pr-6"
-          >
-            <div className="flex size-12 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-              {feature.letter}
-            </div>
-
-            <h3 className="text-sm font-bold">
-              {feature.title}
-            </h3>
-
-            <p className="text-xs leading-5 text-muted-foreground">
-              {feature.text}
-            </p>
-          </div>
-        ))}
-
-        <div className="space-y-3">
-          <h3 className="text-sm font-bold">
-            Antecipe-se ao próximo lançamento
-          </h3>
-
-          <div className="flex gap-2">
-            <Input
-              type="email"
-              placeholder="digite seu e-mail..."
-              className="h-8 border-0 bg-secondary text-xs"
-            />
-
-            <Button size="sm" className="h-8 text-xs">
-              Enviar
-            </Button>
-          </div>
-
-          <p className="text-[10px] text-muted-foreground">
-            Receba lançamentos selecionados, histórias de
-            criadores e novidades do mercado.
-          </p>
-        </div>
-      </section>
     </main>
   );
 };
