@@ -21,8 +21,16 @@ type AuthModalProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-const fieldClass =
-  "h-10 rounded-md border-border bg-transparent px-4 text-sm placeholder:text-primary/70";
+  const triggerClass = (active: boolean) =>
+    cn(
+      "h-auto flex-none rounded-none border-0 bg-transparent! px-3 pb-1 pt-0 text-lg font-bold shadow-none! hover:bg-transparent",
+      active
+        ? "border-b-2 border-primary !text-primary"
+        : "border-b-2 border-transparent !text-foreground",
+    );
+
+  const fieldClass =
+    "h-10 rounded-md border-border bg-transparent px-4 text-sm placeholder:text-primary/70 focus:bg-transparent focus-visible:bg-transparent";
 
 type PasswordFieldProps = {
   id: string;
@@ -48,7 +56,11 @@ const PasswordField = ({
         placeholder={placeholder}
         autoComplete={autoComplete}
         aria-label={placeholder}
-        className={cn(fieldClass, withToggle && "pr-11")}
+        className={cn(
+          fieldClass,
+          withToggle && "pr-11",
+          "[&:-webkit-autofill]:bg-transparent [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_hsl(var(--card))]",
+        )}
       />
 
       {withToggle && (
@@ -83,6 +95,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     const data = new FormData(event.currentTarget);
 
     if (tab === "register") {
@@ -99,11 +112,8 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
     setError(null);
   };
 
-  const triggerClass = (active: boolean) =>
-    cn(
-      "h-auto flex-none rounded-none border-0 bg-transparent! px-3 py-0 text-lg font-bold shadow-none! hover:bg-transparent",
-      active ? "text-primary" : "text-foreground",
-    );
+  const fieldClass =
+    "h-10 rounded-md border-border bg-transparent px-4 text-sm placeholder:text-primary/70 focus:bg-transparent focus-visible:bg-transparent";
 
   const isRegister = tab === "register";
 
@@ -170,7 +180,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   autoComplete="username"
                   placeholder="Nome de usuário ou e-mail"
                   aria-label="Nome de usuário ou e-mail"
-                  className={fieldClass}
+                  className={cn(fieldClass)}
                 />
 
                 <PasswordField
@@ -187,7 +197,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   autoComplete="username"
                   placeholder="Nome de usuário"
                   aria-label="Nome de usuário"
-                  className={fieldClass}
+                  className={cn(fieldClass)}
                 />
 
                 <Input
@@ -196,7 +206,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   autoComplete="email"
                   placeholder="Digite seu e-mail"
                   aria-label="E-mail"
-                  className={fieldClass}
+                  className={cn(fieldClass)}
                 />
 
                 <PasswordField
@@ -206,18 +216,20 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
                   withToggle
                 />
 
-                <PasswordField
-                  id="confirmPassword"
-                  placeholder="Confirmar senha"
-                  autoComplete="new-password"
-                />
-              </>
-            )}
+                <div className="flex flex-col gap-1">
+                  <PasswordField
+                    id="confirmPassword"
+                    placeholder="Confirmar senha"
+                    autoComplete="new-password"
+                  />
 
-            {error && (
-              <p role="alert" className="text-xs text-destructive">
-                {error}
-              </p>
+                  {error && (
+                    <p role="alert" className="text-xs text-destructive">
+                      {error}
+                    </p>
+                  )}
+                </div>
+              </>
             )}
 
             <Button
@@ -249,4 +261,4 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
       </DialogContent>
     </Dialog>
   );
-}
+};
