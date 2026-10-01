@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, ChevronRight } from "lucide-react";
 
 import { NftImage } from "@/components/home/NftImage";
@@ -26,13 +28,14 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { getNfts } from "@/services/nft";
+
 import {
   banners,
   collections,
   features,
   img,
   networks,
-  nfts,
   posts,
 } from "@/mocks/home";
 
@@ -41,6 +44,15 @@ export const HomeScreen = () => {
 
   const [checked, setChecked] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+
+  const {
+    data: nfts = [],
+    isLoading: isNftsLoading,
+    isError: isNftsError,
+  } = useQuery({
+    queryKey: ["nfts"],
+    queryFn: getNfts,
+  });
 
   const toggle = (name: string) =>
     setChecked((prev) =>
@@ -226,27 +238,45 @@ export const HomeScreen = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {nfts.map((nft, i) => (
-              <Card key={i} className="border-0 bg-card">
-                <CardContent className="space-y-3 p-3">
-                  <NftImage src={nft.img} alt={nft.name} />
+            {isNftsLoading && (
+              <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                Carregando NFTs...
+              </div>
+            )}
 
-                  <div>
-                    <p className="text-xs">{nft.name}</p>
+            {isNftsError && (
+              <div className="col-span-full py-12 text-center text-sm text-destructive">
+                Não foi possível carregar os NFTs.
+              </div>
+            )}
 
-                    <p className="mt-1 text-xs font-semibold text-primary">
-                      {nft.price}
+            {!isNftsLoading &&
+              !isNftsError &&
+              nfts.map((nft) => (
+                <Link
+                  key={nft.id}
+                  to="/nft/$id"
+                  params={{ id: nft.id }}
+                  className="block"
+                >
+                  <Card className="border-0 bg-card transition-opacity hover:opacity-90">
+                    <CardContent className="space-y-3 p-3">
+                      <NftImage
+                        src={nft.gallery[0]}
+                        alt={nft.name}
+                      />
 
-                      {nft.old && (
-                        <span className="ml-2 font-normal text-muted-foreground line-through">
-                          {nft.old}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <div>
+                        <p className="text-xs">{nft.name}</p>
+
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          {nft.price}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
           </div>
 
           <Pagination className="mt-8 justify-end">
