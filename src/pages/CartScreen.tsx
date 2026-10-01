@@ -34,6 +34,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Link } from "@tanstack/react-router";
+
 const NETWORK_FEE = 0.016;
 
 const formatEth = (value: number, decimals = 2) =>
@@ -77,7 +79,8 @@ export const CartScreen = () => {
     () =>
       items.reduce(
         (acc, item) =>
-          acc + Number(item.nft.price) * item.quantity,
+          acc +
+          Number.parseFloat(item.nft.price) * item.quantity,
         0,
       ),
     [items],
@@ -160,7 +163,7 @@ export const CartScreen = () => {
                     </p>
 
                     <Button
-                      type="button"
+                      render={<Link to="/" />}
                       className="mt-2 bg-primary text-xs font-bold text-primary-foreground hover:bg-accent"
                     >
                       Continuar explorando
@@ -224,7 +227,7 @@ export const CartScreen = () => {
                         </TableCell>
 
                         <TableCell className="text-sm font-bold text-primary">
-                          {formatEth(Number(item.nft.price))}
+                          {formatEth(Number.parseFloat(item.nft.price))}
                         </TableCell>
 
                         <TableCell>
@@ -269,8 +272,7 @@ export const CartScreen = () => {
 
                         <TableCell className="text-sm font-bold text-primary">
                           {formatEth(
-                            Number(item.nft.price) *
-                              item.quantity,
+                            Number.parseFloat(item.nft.price) * item.quantity,
                           )}
                         </TableCell>
 
@@ -369,7 +371,7 @@ export const CartScreen = () => {
               </div>
 
               <Button
-                type="button"
+                render={<Link to="/checkout" />}
                 disabled={items.length === 0}
                 className="mt-2 h-9 w-full bg-primary text-sm font-bold text-primary-foreground hover:bg-accent"
               >
@@ -377,7 +379,7 @@ export const CartScreen = () => {
               </Button>
 
               <Button
-                type="button"
+                render={<Link to="/" />}
                 variant="link"
                 className="text-xs text-primary hover:no-underline"
               >
@@ -409,25 +411,31 @@ export const CartScreen = () => {
                   key={nft.id}
                   className="basis-1/2 pl-3 md:basis-1/3 lg:basis-1/5"
                 >
-                  <Card className="rounded-none border-0 bg-card p-0 ring-0">
-                    <CardContent className="p-3">
-                      <img
-                        src={nft.gallery[0]}
-                        alt={nft.name}
-                        className="aspect-[4/5] w-full rounded-xl object-cover"
-                      />
-                    </CardContent>
-                  </Card>
+                  <Link
+                    to="/nft/$id"
+                    params={{ id: nft.id }}
+                    className="block"
+                  >
+                    <Card className="rounded-none border-0 bg-card p-0 ring-0">
+                      <CardContent className="p-3">
+                        <img
+                          src={nft.gallery[0]}
+                          alt={nft.name}
+                          className="aspect-[4/5] w-full rounded-xl object-cover"
+                        />
+                      </CardContent>
+                    </Card>
 
-                  <div className="mt-3 flex flex-col gap-1.5">
-                    <span className="text-xs">
-                      {nft.name}
-                    </span>
+                    <div className="mt-3 flex flex-col gap-1.5">
+                      <span className="text-xs">
+                        {nft.name}
+                      </span>
 
-                    <span className="text-xs font-bold text-primary">
-                      {formatEth(Number(nft.price))}
-                    </span>
-                  </div>
+                      <span className="text-xs font-bold text-primary">
+                        {formatEth(Number(nft.price))}
+                      </span>
+                    </div>
+                  </Link>
                 </CarouselItem>
               ))}
             </CarouselContent>

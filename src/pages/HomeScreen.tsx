@@ -32,9 +32,7 @@ import { getNfts } from "@/services/nft";
 
 import {
   banners,
-  collections,
   features,
-  img,
   networks,
   posts,
 } from "@/mocks/home";
@@ -150,22 +148,6 @@ const defaultMaxPrice = 12.38;
     });
 
     return Array.from(counts.entries());
-  }, [nfts]);
-
-  const priceRange = useMemo(() => {
-    if (nfts.length === 0) {
-      return {
-        min: defaultMinPrice,
-        max: defaultMaxPrice,
-      };
-    }
-
-    const prices = nfts.map((nft) => Number.parseFloat(nft.price));
-
-    return {
-      min: Math.min(...prices),
-      max: Math.max(...prices),
-    };
   }, [nfts]);
 
   return (
