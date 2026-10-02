@@ -8,11 +8,16 @@ const users: StoredUser[] = [];
 const sessions: Session[] = [];
 
 const STORAGE_KEY = "marketplace-auth-mock-state";
+export const EXPIRED_SESSIONS_STORAGE_KEY =
+  "marketplace-auth-mock-expired-sessions";
 
 try {
   const storedState = JSON.parse(
     localStorage.getItem(STORAGE_KEY) ?? "null",
-  ) as { users?: StoredUser[]; sessions?: Session[] } | null;
+  ) as {
+    users?: StoredUser[];
+    sessions?: Session[];
+  } | null;
 
   if (storedState) {
     users.push(...(storedState.users ?? []));
@@ -24,7 +29,13 @@ try {
 
 const persistState = () => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ users, sessions }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        users,
+        sessions,
+      }),
+    );
   } catch {
     // Persistence is best effort for the browser mock.
   }
@@ -52,6 +63,25 @@ export const addUser = (user: StoredUser) => {
 
 export const findSessionByToken = (token: string) =>
   sessions.find((session) => session.token === token);
+
+export const isSessionExpired = (token: string) => {
+  try {
+    const manuallyExpiredTokens = JSON.parse(
+      localStorage.getItem(EXPIRED_SESSIONS_STORAGE_KEY) ?? "[]",
+    ) as unknown;
+
+    if (
+      Array.isArray(manuallyExpiredTokens) &&
+      manuallyExpiredTokens.includes(token)
+    ) {
+      return true;
+    }
+  } catch {
+    // Ignore invalid manual test data and use the persisted mock state.
+  }
+
+  return false;
+};
 
 export const addSession = (session: Session) => {
   sessions.push(session);

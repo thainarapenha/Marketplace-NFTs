@@ -8,6 +8,7 @@ import {
   findUserByLogin,
   findUserByEmail,
   findUserByUsername,
+  isSessionExpired,
   removeSession,
   toPublicUser,
 } from "@/mocks/data/auth";
@@ -130,7 +131,7 @@ export const authHandlers = [
     const token = getBearerToken(request);
     const session = token ? findSessionByToken(token) : undefined;
 
-    if (!session) {
+    if (!session || isSessionExpired(session.token)) {
       return errorResponse("UNAUTHENTICATED", "Sessão não encontrada.", 401);
     }
 
