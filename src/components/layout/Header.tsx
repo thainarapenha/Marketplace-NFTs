@@ -4,8 +4,9 @@ import {
   LogOut,
   Search,
   ShoppingCart,
+  User,
 } from "lucide-react";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { AuthModal } from "@/components/login-register/AuthModal";
 import { Badge } from "@/components/ui/badge";
@@ -140,9 +141,17 @@ export const Header = () => {
 
           {isAuthenticated && user ? (
             <>
-              <span className="hidden text-sm text-muted-foreground sm:inline">
+              <Link
+                to="/profile"
+                className={`hidden items-center gap-2 border-b-2 pb-1 text-sm sm:inline-flex ${
+                  location.pathname === "/profile"
+                    ? "border-primary !text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <User className="size-4" />
                 {user.username}
-              </span>
+              </Link>
 
               <Button
                 variant="ghost"

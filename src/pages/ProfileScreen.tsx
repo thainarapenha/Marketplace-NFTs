@@ -117,7 +117,8 @@ export const ProfileScreen = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState("profile");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [form, setForm] = useState<UpdateProfileInput>({
@@ -167,14 +168,15 @@ export const ProfileScreen = () => {
     },
     onSuccess: (profile) => {
       queryClient.setQueryData(["profile", user?.id], profile);
-      setAvatarUrl(null);
-      setSuccess("Avatar atualizado com sucesso.");
+      setAvatarError(null);
+      setAvatarSuccess("Avatar atualizado com sucesso.");
+      setSuccess(null);
       setError(null);
     },
     onError: (cause) => {
-      setAvatarUrl(null);
+      setAvatarSuccess(null);
       setSuccess(null);
-      setError(getApiErrorMessage(cause));
+      setAvatarError(getApiErrorMessage(cause));
     },
   });
 
@@ -186,13 +188,15 @@ export const ProfileScreen = () => {
     },
     onSuccess: (profile) => {
       queryClient.setQueryData(["profile", user?.id], profile);
-      setAvatarUrl(null);
-      setSuccess("Avatar removido com sucesso.");
+      setAvatarError(null);
+      setAvatarSuccess("Avatar removido com sucesso.");
+      setSuccess(null);
       setError(null);
     },
     onError: (cause) => {
+      setAvatarSuccess(null);
       setSuccess(null);
-      setError(getApiErrorMessage(cause));
+      setAvatarError(getApiErrorMessage(cause));
     },
   });
 
@@ -205,13 +209,13 @@ export const ProfileScreen = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setError("Selecione um arquivo de imagem válido.");
+      setAvatarError("Selecione um arquivo de imagem válido.");
       event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError("A imagem deve ter no máximo 5 MB.");
+      setAvatarError("A imagem deve ter no máximo 5 MB.");
       event.target.value = "";
       return;
     }
@@ -219,18 +223,21 @@ export const ProfileScreen = () => {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== "string") return;
-      setError(null);
+      setAvatarError(null);
+      setAvatarSuccess(null);
       setSuccess(null);
-      setAvatarUrl(reader.result);
       avatarMutation.mutate(reader.result);
     };
-    reader.onerror = () => setError("Não foi possível ler a imagem.");
+    reader.onerror = () => {
+      setAvatarError("Não foi possível ler a imagem.");
+    };
     reader.readAsDataURL(file);
     event.target.value = "";
   };
 
   const handleAvatarRemove = () => {
-    setError(null);
+    setAvatarError(null);
+    setAvatarSuccess(null);
     setSuccess(null);
     removeAvatarMutation.mutate();
   };
@@ -245,11 +252,11 @@ export const ProfileScreen = () => {
   const updateField = (field: keyof UpdateProfileInput) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setForm((current) => ({ ...current, [field]: event.target.value }));
-    };
+  };
 
   const isLoading = profileQuery.isPending;
   const isAvatarPending = avatarMutation.isPending || removeAvatarMutation.isPending;
-  const displayedAvatarUrl = avatarUrl ?? profileQuery.data?.avatarUrl;
+  const displayedAvatarUrl = profileQuery.data?.avatarUrl;
 
   return (
     <main className="min-h-screen bg-background px-6 py-8 font-mono text-foreground">
@@ -377,10 +384,10 @@ export const ProfileScreen = () => {
                 <span className="text-sm">Avatar</span>
                 <div className="flex items-center gap-6">
                   <Avatar className="size-[50px] border border-border bg-card">
-                    {displayedAvatarUrl && <AvatarImage src={displayedAvatarUrl} alt="Seu avatar" />}
                     <AvatarFallback className="bg-card text-primary">
                       <ImageIcon className="size-5" />
                     </AvatarFallback>
+                    {displayedAvatarUrl && <AvatarImage src={displayedAvatarUrl} alt="Seu avatar" />}
                   </Avatar>
 
                   <input
@@ -409,6 +416,16 @@ export const ProfileScreen = () => {
                     {removeAvatarMutation.isPending ? "Removendo..." : "Remover"}
                   </Button>
                 </div>
+                {avatarError && (
+                  <p role="alert" className="text-xs text-destructive">
+                    {avatarError}
+                  </p>
+                )}
+                {avatarSuccess && (
+                  <p role="status" className="text-xs text-primary">
+                    {avatarSuccess}
+                  </p>
+                )}
               </div>
             </div>
           </div>
