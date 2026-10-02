@@ -3,6 +3,10 @@ export interface User {
   username: string;
   email: string;
   createdAt: string;
+  displayName?: string;
+  walletNickname?: string;
+  ensName?: string;
+  avatarUrl?: string | null;
 }
 
 export interface Session {
@@ -21,6 +25,11 @@ export interface RegisterCredentials {
   username: string;
   email: string;
   password: string;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface AuthResponse {

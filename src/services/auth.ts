@@ -1,10 +1,16 @@
 import { api } from "@/services/api";
 import type {
   AuthResponse,
+  ChangePasswordInput,
   LoginCredentials,
   RegisterCredentials,
   SessionResponse,
 } from "@/types/auth";
+import type {
+  Profile,
+  UpdateAvatarInput,
+  UpdateProfileInput,
+} from "@/types/profile";
 
 export const register = async (
   credentials: RegisterCredentials,
@@ -39,9 +45,61 @@ export const logout = async (token: string): Promise<void> => {
   });
 };
 
+export const changePassword = async (
+  token: string,
+  passwords: ChangePasswordInput,
+): Promise<void> => {
+  await api.post("/auth/password", passwords, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const getProfile = async (token: string): Promise<Profile> => {
+  const response = await api.get<Profile>("/profile", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
+export const updateProfile = async (
+  token: string,
+  profile: UpdateProfileInput,
+): Promise<Profile> => {
+  const response = await api.patch<Profile>("/profile", profile, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
+export const updateAvatar = async (
+  token: string,
+  avatar: UpdateAvatarInput,
+): Promise<Profile> => {
+  const response = await api.patch<Profile>("/profile/avatar", avatar, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
+export const removeAvatar = async (token: string): Promise<Profile> => {
+  const response = await api.delete<Profile>("/profile/avatar", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
 export const authService = {
   register,
   login,
   getSession,
   logout,
+  changePassword,
+  getProfile,
+  updateProfile,
+  updateAvatar,
+  removeAvatar,
 };
