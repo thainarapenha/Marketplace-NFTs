@@ -94,18 +94,19 @@ export const CartScreen = () => {
     delta: number,
   ) => {
     const item = items.find(
-      (item) =>
-        item.nft.id === nftId &&
-        item.edition === edition,
+      (item) => item.nft.id === nftId && item.edition === edition,
     );
 
     if (!item) return;
 
-    updateQuantity(
-      nftId,
-      edition,
-      Math.max(1, item.quantity + delta),
-    );
+    const nextQuantity = item.quantity + delta;
+
+    if (nextQuantity < 1) {
+      removeItem(nftId, edition);
+      return;
+    }
+
+    updateQuantity(nftId, edition, nextQuantity);
   };
 
   const applyPromo = () => {
@@ -150,7 +151,7 @@ export const CartScreen = () => {
 
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
             {/* Lista de NFTs */}
-            <section>
+            <section className="min-w-0">
               {items.length === 0 ? (
                 <div className="flex min-h-64 items-center justify-center rounded-md bg-card">
                   <div className="flex flex-col items-center gap-3 text-center">
@@ -171,7 +172,80 @@ export const CartScreen = () => {
                   </div>
                 </div>
               ) : (
-                <Table className="border-separate border-spacing-y-2">
+                <>
+                  <div className="flex w-full min-w-0 flex-col gap-3 md:hidden">
+                    {items.map((item) => (
+                      <article
+                        key={`${item.nft.id}-${item.edition}`}
+                        className="flex w-full min-w-0 gap-3 overflow-hidden rounded-2xl bg-card"
+                      >
+                        <Avatar className="size-24 shrink-0 rounded-none after:rounded-none">
+                          <AvatarImage
+                            src={item.nft.gallery[0]}
+                            alt={item.nft.name}
+                            className="rounded-none object-cover"
+                          />
+
+                          <AvatarFallback className="rounded-none">
+                            {item.nft.name.slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="flex min-w-0 flex-1 flex-col justify-between py-2 pr-3">
+                          <span className="block truncate text-base font-bold">
+                            {item.nft.name}
+                          </span>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate text-sm text-primary/70">
+                              Edição: {item.edition}
+                            </span>
+
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <Button
+                                type="button"
+                                size="icon"
+                                aria-label={
+                                  item.quantity <= 1
+                                    ? `Remover ${item.nft.name}`
+                                    : "Diminuir quantidade"
+                                }
+                                onClick={() =>
+                                  changeQuantity(item.nft.id, item.edition, -1)
+                                }
+                                className="size-6 rounded-full bg-secondary text-foreground ring-1 ring-foreground/70 hover:bg-secondary/80"
+                              >
+                                <Minus className="size-3" />
+                              </Button>
+
+                              <span className="w-4 text-center text-sm">
+                                {item.quantity}
+                              </span>
+
+                              <Button
+                                type="button"
+                                size="icon"
+                                aria-label="Aumentar quantidade"
+                                onClick={() =>
+                                  changeQuantity(item.nft.id, item.edition, 1)
+                                }
+                                className="size-6 rounded-full bg-secondary text-foreground ring-1 ring-foreground/70 hover:bg-secondary/80"
+                              >
+                                <Plus className="size-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <span className="block text-lg font-bold text-primary">
+                            {formatEth(Number.parseFloat(item.nft.price))}
+                          </span>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  <div className="hidden md:block">
+                    <Table className="border-separate border-spacing-y-2">
                   <TableHeader>
                     <TableRow className="border-b border-border hover:bg-transparent">
                       <TableHead className="px-0 text-sm font-bold text-foreground">
@@ -296,7 +370,9 @@ export const CartScreen = () => {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                    </Table>
+                  </div>
+                </>
               )}
             </section>
 
