@@ -12,7 +12,7 @@ function RootLayout() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const hideFooter = pathname === "/profile" || pathname === "/collection";
+  const hideFooter = pathname === "/profile" || pathname === "/wallets";
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
