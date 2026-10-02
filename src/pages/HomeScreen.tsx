@@ -268,10 +268,15 @@ export const HomeScreen = () => {
                   type="button"
                   aria-label={`Exibir ${nft.name}`}
                   onClick={() => setHeroIndex(index)}
-                  className={`size-1.5 rounded-full transition-opacity max-md:size-2 ${
-                    heroIndex === index ? "bg-primary" : "bg-primary/60"
-                  }`}
-                />
+                  className="flex size-6 items-center justify-center rounded-full"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`size-1.5 rounded-full transition-opacity max-md:size-2 ${
+                      heroIndex === index ? "bg-primary" : "bg-primary/60"
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           </div>
@@ -314,9 +319,9 @@ export const HomeScreen = () => {
             <Card className="border-0 bg-card">
               <CardContent className="space-y-5 p-4">
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold">
+                  <h2 className="mb-3 text-sm font-semibold">
                     Coleções
-                  </h3>
+                  </h2>
 
                   <ul className="space-y-2.5">
                     {collectionOptions.map(([name, count]) => (
@@ -344,11 +349,12 @@ export const HomeScreen = () => {
                 <Separator className="bg-border" />
 
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold">
+                  <h2 className="text-sm font-semibold">
                     Faixa de preço
-                  </h3>
+                  </h2>
 
                   <Slider
+                    aria-label="Faixa de preço"
                     min={defaultMinPrice}
                     max={defaultMaxPrice}
                     step={0.01}
@@ -378,9 +384,9 @@ export const HomeScreen = () => {
                 <Separator className="bg-border" />
 
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold">
+                  <h2 className="mb-3 text-sm font-semibold">
                     Rede
-                  </h3>
+                  </h2>
 
                   <ul className="space-y-2.5">
                     {networks.map(([name, count]) => (
@@ -448,7 +454,10 @@ export const HomeScreen = () => {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-8 w-[170px] border-0 bg-transparent text-xs">
+                  <SelectTrigger
+                    aria-label="Ordenar NFTs"
+                    className="h-8 w-[170px] border-0 bg-transparent text-xs"
+                  >
                     <SelectValue />
                   </SelectTrigger>
 
@@ -613,9 +622,9 @@ export const HomeScreen = () => {
                 </div>
 
                 <div className="flex min-w-0 flex-col justify-center gap-2 p-4">
-                  <h3 className="text-sm font-bold">
+                  <h2 className="text-sm font-bold">
                     {banner.title}
-                  </h3>
+                  </h2>
 
                   <p className="text-[11px] leading-4 text-muted-foreground">
                     {banner.text}
@@ -715,9 +724,9 @@ export const HomeScreen = () => {
           <div className="max-h-[75vh] overflow-y-auto px-5 pb-8 pt-5">
             <div className="space-y-6">
               <div>
-                <h3 className="mb-3 text-sm font-semibold">
+                <h2 className="mb-3 text-sm font-semibold">
                   Coleções
-                </h3>
+                </h2>
 
                 <ul className="space-y-3">
                   {collectionOptions.map(([name, count]) => (
@@ -745,11 +754,12 @@ export const HomeScreen = () => {
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold">
+                <h2 className="text-sm font-semibold">
                   Faixa de preço
-                </h3>
+                </h2>
 
                 <Slider
+                  aria-label="Faixa de preço"
                   min={defaultMinPrice}
                   max={defaultMaxPrice}
                   step={0.01}
@@ -771,9 +781,9 @@ export const HomeScreen = () => {
               <Separator />
 
               <div>
-                <h3 className="mb-3 text-sm font-semibold">
+                <h2 className="mb-3 text-sm font-semibold">
                   Rede
-                </h3>
+                </h2>
 
                 <ul className="space-y-3">
                   {networks.map(([name, count]) => (

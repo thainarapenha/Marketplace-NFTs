@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:lighthouse": "tsc -b && VITE_ENABLE_MOCKS=true vite build",
+    "lighthouse": "npm run build:lighthouse && node scripts/lighthouse.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -39,12 +41,14 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "chrome-launcher": "^1.2.2",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
     "jsdom": "^29.1.1",
+    "lighthouse": "^13.5.0",
     "msw": "^2.15.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.2",
