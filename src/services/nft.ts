@@ -1,10 +1,5 @@
-import axios from "axios";
-
+import { api } from "@/services/api";
 import type { Nft } from "@/types/nft";
-
-const api = axios.create({
-  baseURL: "/api",
-});
 
 export const getNfts = async (): Promise<Nft[]> => {
   const response = await api.get<Nft[]>("/nfts");

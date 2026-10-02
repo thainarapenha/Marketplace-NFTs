@@ -1,7 +1,8 @@
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
+import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
+import type { RouterContext } from "@/router-context";
 
 function RootLayout() {
   return (
@@ -10,9 +11,9 @@ function RootLayout() {
       <Outlet />
       <Footer />
     </div>
-  )
+  );
 }
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
   component: RootLayout,
-})
+});
