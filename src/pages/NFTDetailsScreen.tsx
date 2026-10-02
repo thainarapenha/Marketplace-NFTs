@@ -131,9 +131,9 @@ export const NftDetailScreen = () => {
   const currentEdition = edition || nft.defaultEdition;
 
   return (
-    <main className="mx-auto max-w-[1200px] px-4 md:px-6">
+    <main className="mx-auto min-w-0 max-w-[1200px] px-4 md:px-6">
       {/* ===== Breadcrumb ===== */}
-      <Breadcrumb className="py-4">
+      <Breadcrumb className="py-4 max-md:hidden">
         <BreadcrumbList className="text-xs font-semibold text-foreground">
           <BreadcrumbItem>
             <BreadcrumbLink href="/" className="text-foreground">
@@ -160,9 +160,9 @@ export const NftDetailScreen = () => {
       </Breadcrumb>
 
       {/* ===== Produto ===== */}
-      <section className="grid gap-6 lg:grid-cols-[84px_minmax(0,480px)_1fr]">
+      <section className="grid min-w-0 gap-6 lg:grid-cols-[84px_minmax(0,480px)_1fr]">
         {/* Miniaturas */}
-        <div className="order-2 flex gap-3 lg:order-1 lg:flex-col">
+        <div className="order-2 flex min-w-0 flex-wrap gap-3 lg:order-1 lg:flex-col lg:flex-nowrap">
           {nft.gallery.map((src, index) => (
             <button
               key={src}
@@ -188,7 +188,7 @@ export const NftDetailScreen = () => {
 
         {/* Imagem principal */}
         <Card className="relative order-1 border-0 bg-card lg:order-2">
-          <CardContent className="p-3">
+          <CardContent className="p-0 md:p-3">
             <AspectRatio
               ratio={1}
               className="overflow-hidden rounded-xl"
@@ -213,7 +213,7 @@ export const NftDetailScreen = () => {
         </Card>
 
         {/* Informações */}
-        <div className="order-3 space-y-4">
+        <div className="order-3 min-w-0 space-y-4">
           <h1 className="text-2xl font-bold">{nft.name}</h1>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -357,7 +357,7 @@ export const NftDetailScreen = () => {
 
       {isImageExpanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
           role="dialog"
           aria-modal="true"
           aria-label={`Imagem ampliada de ${nft.name}`}
@@ -366,7 +366,7 @@ export const NftDetailScreen = () => {
           <img
             src={nft.gallery[selected]}
             alt={nft.name}
-            className="max-h-full max-w-full object-contain"
+            className="max-h-[70vh] max-w-[75vw] object-contain md:max-h-[90vh] md:max-w-[90vw]"
             onClick={(event) => event.stopPropagation()}
           />
 
@@ -383,10 +383,10 @@ export const NftDetailScreen = () => {
       )}
 
       {/* ===== Abas ===== */}
-      <Tabs defaultValue="details" className="mt-16">
+      <Tabs defaultValue="details" className="mt-16 min-w-0">
         <TabsList
           variant="line"
-          className="h-auto gap-6 bg-transparent p-0"
+          className="h-auto max-w-full flex-wrap gap-6 bg-transparent p-0"
         >
           <TabsTrigger
             value="details"
@@ -440,7 +440,7 @@ export const NftDetailScreen = () => {
           <Carousel
             setApi={setApi}
             opts={{ align: "start" }}
-            className="mt-6"
+            className="mt-6 min-w-0"
           >
             <CarouselContent>
               {relatedNfts.map((related) => (

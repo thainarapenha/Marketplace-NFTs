@@ -54,6 +54,7 @@ export const Header = () => {
     location.pathname.startsWith("/order/");
 
   const isHomeRoute = location.pathname === "/";
+  const isNftDetailRoute = location.pathname.startsWith("/nft/");
 
   const handleLogout = async () => {
     setAuthOpen(false);
@@ -117,16 +118,18 @@ export const Header = () => {
 
         <div className="flex items-center gap-3 max-md:w-full">
           {/* Busca mobile */}
-          <div className="relative flex-1 md:hidden">
-            <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
+          {!isNftDetailRoute && (
+            <div className="relative flex-1 md:hidden">
+              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
 
-            <input
-              type="search"
-              placeholder="Explorar coleções"
-              aria-label="Explorar coleções"
-              className="h-12 w-full rounded-xl border-0 bg-card pl-12 pr-4 text-sm outline-none placeholder:text-primary/70 focus:ring-1 focus:ring-ring"
-            />
-          </div>
+              <input
+                type="search"
+                placeholder="Explorar coleções"
+                aria-label="Explorar coleções"
+                className="h-12 w-full rounded-xl border-0 bg-card pl-12 pr-4 text-sm outline-none placeholder:text-primary/70 focus:ring-1 focus:ring-ring"
+              />
+            </div>
+          )}
 
           {isHomeRoute && (
             <Button
