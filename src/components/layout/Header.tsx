@@ -1,39 +1,28 @@
+// src/components/layout/Header.tsx
 import { useEffect, useRef, useState } from "react";
 import {
   LogIn,
   LogOut,
   Search,
   ShoppingCart,
+  SlidersHorizontal,
   User,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { AuthModal } from "@/components/login-register/AuthModal";
+// import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
-import {
-  getAuthReturnLocation,
-} from "@/lib/routeProtection";
+import { getAuthReturnLocation } from "@/lib/routeProtection";
 
 const navLinks = [
-  {
-    label: "Início",
-    path: "/",
-  },
-  {
-    label: "Mercado",
-    path: "/",
-  },
-  {
-    label: "Criadores",
-    path: "/",
-  },
-  {
-    label: "Aprenda",
-    path: "/",
-  },
+  { label: "Início", path: "/" },
+  { label: "Mercado", path: "/" },
+  { label: "Criadores", path: "/" },
+  { label: "Aprenda", path: "/" },
 ];
 
 export const Header = () => {
@@ -64,6 +53,8 @@ export const Header = () => {
     location.pathname.startsWith("/nft/") ||
     location.pathname.startsWith("/order/");
 
+  const isHomeRoute = location.pathname === "/";
+
   const handleLogout = async () => {
     setAuthOpen(false);
     await logout();
@@ -83,10 +74,25 @@ export const Header = () => {
     }
   };
 
+  const handleFilterClick = () => {
+    window.dispatchEvent(new CustomEvent("kurio:open-mobile-filters"));
+  };
+
+  const handleProfileClick = () => {
+    if (isAuthenticated) {
+      void navigate({ to: "/profile" });
+      return;
+    }
+
+    setAuthOpen(true);
+  };
+
   return (
     <>
-      <header className="mx-auto mb-6 flex h-14 max-w-[1200px] items-center justify-between border-b border-border px-4 md:px-6">
-        <span className="text-sm font-bold tracking-wide">KURIO</span>
+      <header className="mx-auto mb-6 flex h-14 max-w-[1200px] items-center justify-between border-b border-border px-4 max-md:mb-4 max-md:h-auto max-md:border-b-0 max-md:pb-0 max-md:pt-4 md:px-6">
+        <span className="text-sm font-bold tracking-wide max-md:hidden">
+          KURIO
+        </span>
 
         <nav className="hidden gap-8 md:flex">
           {navLinks.map((link) => {
@@ -118,15 +124,44 @@ export const Header = () => {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" aria-label="Buscar">
+        <div className="flex items-center gap-3 max-md:w-full">
+          {/* Busca mobile */}
+          <div className="relative flex-1 md:hidden">
+            <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
+
+            <input
+              type="search"
+              placeholder="Explorar coleções"
+              aria-label="Explorar coleções"
+              className="h-12 w-full rounded-xl border-0 bg-card pl-12 pr-4 text-sm outline-none placeholder:text-primary/70 focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
+          {isHomeRoute && (
+            <Button
+              size="icon"
+              className="size-12 rounded-xl bg-gradient-to-b from-accent to-primary text-primary-foreground md:hidden"
+              aria-label="Abrir filtros"
+              onClick={handleFilterClick}
+            >
+              <SlidersHorizontal className="size-5" />
+            </Button>
+          )}
+
+          {/* Controles desktop */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:inline-flex"
+            aria-label="Buscar"
+          >
             <Search className="size-4" />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            className="relative hidden md:inline-flex"
             aria-label="Carrinho"
             onClick={() => navigate({ to: "/cart" })}
           >
@@ -143,7 +178,7 @@ export const Header = () => {
             <>
               <Link
                 to="/profile"
-                className={`hidden items-center gap-2 border-b-2 pb-1 text-sm sm:inline-flex ${
+                className={`hidden items-center gap-2 border-b-2 pb-1 text-sm md:inline-flex ${
                   location.pathname === "/profile"
                     ? "border-primary !text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -156,6 +191,7 @@ export const Header = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                className="hidden md:inline-flex"
                 onClick={handleLogout}
                 disabled={isLoading}
               >
@@ -166,7 +202,7 @@ export const Header = () => {
           ) : (
             <Button
               size="sm"
-              className="bg-primary text-primary-foreground hover:bg-accent"
+              className="hidden bg-primary text-primary-foreground hover:bg-accent md:inline-flex"
               onClick={() => setAuthOpen(true)}
             >
               <LogIn className="size-4" />
@@ -175,6 +211,11 @@ export const Header = () => {
           )}
         </div>
       </header>
+
+      {/* <MobileBottomNav
+        cartCount={cartItemCount}
+        onProfileClick={handleProfileClick}
+      /> */}
 
       <AuthModal
         open={authOpen}
