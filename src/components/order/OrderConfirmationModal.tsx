@@ -52,7 +52,7 @@ const SummaryCell = ({
   value: string;
   bold?: boolean;
 }) => (
-  <div className="flex min-w-0 flex-col px-4 first:pl-0 last:pr-0">
+  <div className="flex min-w-0 flex-col px-2 first:pl-0 last:pr-0 sm:px-4">
     <span className={cn("text-sm", bold && "font-bold")}>{label}</span>
     <span className="truncate text-sm text-primary/80">{value}</span>
   </div>
@@ -80,7 +80,7 @@ export const OrderConfirmationModal = ({
       }}
     >
       <DialogContent
-        className="max-h-[calc(100vh-4rem)] max-w-[578px] gap-0 overflow-y-auto overflow-x-hidden rounded-none border-0 bg-card p-0 font-mono sm:max-w-[578px] [&>button]:text-primary"
+        className="w-[calc(100%-2rem)] max-h-[calc(100vh-4rem)] max-w-[578px] gap-0 overflow-y-auto overflow-x-hidden rounded-none border-0 bg-card p-0 font-mono sm:max-w-[578px] [&>button]:text-primary"
       >
         <DialogTitle className="sr-only">Pedido confirmado</DialogTitle>
 
@@ -88,15 +88,15 @@ export const OrderConfirmationModal = ({
           Resumo da transação e dos NFTs adquiridos.
         </DialogDescription>
 
-        <div className="flex flex-col items-center gap-4 px-6 pb-6 pt-6">
-          <ThankYouIcon className="size-20 text-primary" />
+        <div className="flex flex-col items-center gap-3 px-4 pb-4 pt-4 sm:gap-4 sm:px-6 sm:pb-6 sm:pt-6">
+          <ThankYouIcon className="size-16 text-primary sm:size-20" />
 
           <p className="text-center text-base font-bold text-primary">
             Seus NFTs agora estão na sua carteira
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-y-3 divide-x divide-primary/60 border-y border-primary/60 px-9 py-3 md:grid-cols-4 [&>*:nth-child(odd)]:border-l-0">
+        <div className="grid grid-cols-2 gap-y-2 divide-x divide-primary/60 border-y border-primary/60 px-4 py-2.5 sm:gap-y-3 sm:px-9 sm:py-3 md:grid-cols-4 [&>*:nth-child(odd)]:border-l-0">
           <SummaryCell
             label="ID do pedido"
             value={shortenId(order.id)}
@@ -120,21 +120,21 @@ export const OrderConfirmationModal = ({
           />
         </div>
 
-        <div className="flex flex-col gap-3 px-9 pt-5">
+        <div className="flex flex-col gap-2.5 px-4 pt-4 sm:gap-3 sm:px-9 sm:pt-5">
           <h3 className="text-sm">Detalhes da transação</h3>
 
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow className="border-b border-border hover:bg-transparent">
-                <TableHead className="h-8 px-0 text-sm font-normal text-foreground">
+                <TableHead className="h-8 px-0 text-xs font-normal text-foreground sm:text-sm">
                   NFTs
                 </TableHead>
 
-                <TableHead className="h-8 text-center text-sm font-normal text-foreground">
+                <TableHead className="h-8 w-[4.5rem] px-1 text-center text-xs font-normal text-foreground sm:w-auto sm:px-2 sm:text-sm">
                   Edições
                 </TableHead>
 
-                <TableHead className="h-8 px-0 text-right text-sm font-normal text-foreground">
+                <TableHead className="h-8 w-[5.75rem] px-0 text-right text-xs font-normal text-foreground sm:w-auto sm:text-sm">
                   Subtotal
                 </TableHead>
               </TableRow>
@@ -146,9 +146,9 @@ export const OrderConfirmationModal = ({
                   key={item.nftId}
                   className="border-0 hover:bg-transparent"
                 >
-                  <TableCell className="px-0 py-3">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-[70px] rounded-md after:rounded-md">
+                  <TableCell className="max-w-0 px-0 py-2.5 sm:py-3">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                      <Avatar className="size-14 shrink-0 rounded-md after:rounded-md sm:size-[70px]">
                         <AvatarImage
                           src={item.image}
                           alt={item.name}
@@ -160,23 +160,23 @@ export const OrderConfirmationModal = ({
                         </AvatarFallback>
                       </Avatar>
 
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold">
+                      <div className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-bold sm:text-sm">
                           {item.name}
                         </span>
 
-                        <span className="text-xs text-primary/70">
+                        <span className="block truncate text-[0.6875rem] text-primary/70 sm:text-xs">
                           Edição: {item.tokenId ?? "—"}
                         </span>
                       </div>
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-center text-sm text-primary/80">
+                  <TableCell className="px-1 text-center text-xs text-primary/80 sm:px-2 sm:text-sm">
                     (x {item.quantity})
                   </TableCell>
 
-                  <TableCell className="px-0 text-right text-base font-bold text-primary">
+                  <TableCell className="px-0 text-right text-sm font-bold text-primary sm:text-base">
                     {formatEth(item.unitPrice * item.quantity)}
                   </TableCell>
                 </TableRow>
@@ -185,34 +185,34 @@ export const OrderConfirmationModal = ({
           </Table>
 
           <dl className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-end gap-12">
+            <div className="flex items-center justify-end gap-4 sm:gap-12">
               <dt className="text-sm">Subtotal</dt>
 
-              <dd className="min-w-[110px] text-right">
+              <dd className="min-w-[96px] text-right sm:min-w-[110px]">
                 {formatEth(order.subtotal)}
               </dd>
             </div>
 
-            <div className="flex items-center justify-end gap-12">
+            <div className="flex items-center justify-end gap-4 sm:gap-12">
               <dt className="text-sm">Desconto</dt>
 
-              <dd className="min-w-[110px] text-right">
+              <dd className="min-w-[96px] text-right sm:min-w-[110px]">
                 -{formatEth(order.discount)}
               </dd>
             </div>
 
-            <div className="flex items-center justify-end gap-12">
+            <div className="flex items-center justify-end gap-4 sm:gap-12">
               <dt className="text-sm">Taxa de rede</dt>
 
-              <dd className="min-w-[110px] text-right">
+              <dd className="min-w-[96px] text-right sm:min-w-[110px]">
                 {formatEth(order.networkFee, 3)}
               </dd>
             </div>
 
-            <div className="flex items-center justify-end gap-12">
+            <div className="flex items-center justify-end gap-4 sm:gap-12">
               <dt className="text-sm font-bold">Total</dt>
 
-              <dd className="min-w-[110px] text-right text-base font-bold text-primary">
+              <dd className="min-w-[96px] text-right text-base font-bold text-primary sm:min-w-[110px]">
                 {formatEth(order.total, 3)}
               </dd>
             </div>
@@ -229,7 +229,7 @@ export const OrderConfirmationModal = ({
               type="button"
               className={cn(
                 buttonVariants(),
-                "mx-auto mb-6 mt-1 h-12 rounded-md bg-primary px-8 text-sm font-bold text-primary-foreground hover:bg-accent",
+                "mx-auto mb-4 mt-0 h-11 rounded-md bg-primary px-6 text-sm font-bold text-primary-foreground hover:bg-accent sm:mb-6 sm:mt-1 sm:h-12 sm:px-8",
               )}
             >
               Ver transação

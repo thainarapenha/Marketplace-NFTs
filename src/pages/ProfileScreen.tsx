@@ -18,6 +18,7 @@ import { ProfileSidebar } from "@/components/profile-wallet/ProfileSidebar";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { PRIVATE_QUERY_META } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 import {
   changePassword,
   getProfile,
@@ -111,6 +112,7 @@ const PasswordField = ({
 
 export const ProfileScreen = () => {
   const { user, logout } = useAuth();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -170,12 +172,15 @@ export const ProfileScreen = () => {
       });
 
       setForm(profileToForm(profile));
-      setSuccess("Perfil atualizado com sucesso.");
+      toast("success", "Dados do perfil atualizados com sucesso.");
+      setSuccess(null);
       setError(null);
     },
     onError: (cause) => {
       setSuccess(null);
-      setError(getApiErrorMessage(cause));
+      const message = getApiErrorMessage(cause);
+      setError(message);
+      toast("error", message);
     },
   });
 
@@ -193,14 +198,17 @@ export const ProfileScreen = () => {
       queryClient.setQueryData(["profile", user?.id], profile);
 
       setAvatarError(null);
-      setAvatarSuccess("Avatar atualizado com sucesso.");
+      toast("success", "Foto atualizada com sucesso.");
+      setAvatarSuccess(null);
       setSuccess(null);
       setError(null);
     },
     onError: (cause) => {
       setAvatarSuccess(null);
       setSuccess(null);
-      setAvatarError(getApiErrorMessage(cause));
+      const message = getApiErrorMessage(cause);
+      setAvatarError(message);
+      toast("error", message);
     },
   });
 
@@ -218,14 +226,17 @@ export const ProfileScreen = () => {
       queryClient.setQueryData(["profile", user?.id], profile);
 
       setAvatarError(null);
-      setAvatarSuccess("Avatar removido com sucesso.");
+      toast("success", "Foto removida com sucesso.");
+      setAvatarSuccess(null);
       setSuccess(null);
       setError(null);
     },
     onError: (cause) => {
       setAvatarSuccess(null);
       setSuccess(null);
-      setAvatarError(getApiErrorMessage(cause));
+      const message = getApiErrorMessage(cause);
+      setAvatarError(message);
+      toast("error", message);
     },
   });
 
@@ -253,16 +264,14 @@ export const ProfileScreen = () => {
       });
 
       setPasswordError(null);
-      setPasswordSuccess("Senha alterada com sucesso.");
+      toast("success", "Senha alterada com sucesso.");
+      setPasswordSuccess(null);
     },
     onError: (cause) => {
       setPasswordSuccess(null);
-      setPasswordError(
-        getApiErrorMessage(
-          cause,
-          "Não foi possível alterar a senha.",
-        ),
-      );
+      const message = getApiErrorMessage(cause, "Não foi possível alterar a senha.");
+      setPasswordError(message);
+      toast("error", message);
     },
   });
 
@@ -289,6 +298,7 @@ export const ProfileScreen = () => {
 
     if (file.size > 5 * 1024 * 1024) {
       setAvatarError("A imagem deve ter no máximo 5 MB.");
+      toast("error", "A imagem deve ter no máximo 5 MB.");
       event.target.value = "";
       return;
     }
@@ -344,6 +354,7 @@ export const ProfileScreen = () => {
       !passwordForm.confirmNewPassword
     ) {
       setPasswordError("Preencha todos os campos de senha.");
+      toast("error", "Preencha todos os campos de senha.");
       return;
     }
 

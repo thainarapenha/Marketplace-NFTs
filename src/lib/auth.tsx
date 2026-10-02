@@ -20,6 +20,7 @@ import type {
   RegisterCredentials,
   User,
 } from "@/types/auth";
+import { useToast } from "@/components/ui/toast";
 
 const AUTH_TOKEN_KEY = "marketplace-auth-token";
 const SESSION_QUERY_KEY = ["auth", "session"];
@@ -45,6 +46,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const sessionQuery = useQuery({
     queryKey: SESSION_QUERY_KEY,
     meta: PRIVATE_QUERY_META,
@@ -60,6 +62,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
       } catch (error) {
         if (isUnauthorizedError(error)) {
           clearStoredToken();
+          toast("error", "Sua sessão expirou. Entre novamente para continuar.");
           return null;
         }
 

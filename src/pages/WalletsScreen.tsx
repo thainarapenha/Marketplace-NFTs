@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useCreateWallet, useUpdateWallet, useWallets } from "@/hooks/useWallets";
+import { useToast } from "@/components/ui/toast";
 import type { Wallet, WalletNetwork, WalletType } from "@/types/wallet";
 
 const NETWORKS = [
@@ -93,6 +94,7 @@ const getApiErrorMessage = (cause: unknown) => {
 
 export const WalletsScreen = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeWalletTab, setActiveWalletTab] = useState<"primary" | "secondary">("primary");
   const [sameAsMain, setSameAsMain] = useState(false);
   const [primaryForm, setPrimaryForm] = useState<WalletForm>(emptyWalletForm);
@@ -157,6 +159,7 @@ export const WalletsScreen = () => {
     if (!form.address.trim() || !form.network || !form.type) {
       setSuccess(null);
       setError("Preencha os campos obrigatórios da carteira.");
+      toast("error", "Preencha os campos obrigatórios da carteira.");
       return;
     }
 
@@ -183,8 +186,11 @@ export const WalletsScreen = () => {
         setInitialSecondaryForm(savedForm);
       }
       setSuccess(kind === "primary" ? "Carteira principal salva com sucesso." : "Carteira secundária salva com sucesso.");
+      toast("success", id ? "Carteira editada com sucesso." : "Carteira cadastrada com sucesso.");
     } catch (cause) {
-      setError(getApiErrorMessage(cause));
+      const message = getApiErrorMessage(cause);
+      setError(message);
+      toast("error", message);
     }
   };
 
@@ -244,7 +250,7 @@ export const WalletsScreen = () => {
           </nav>
 
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-            <header className="flex items-start justify-between gap-4">
+            <header className="flex flex-col items-start gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
               <p className="text-xs text-primary/80">
                 Estas carteiras ficam disponíveis no pagamento e para receber NFTs comprados.
               </p>

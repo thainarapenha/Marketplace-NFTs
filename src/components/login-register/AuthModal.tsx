@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 import type { AuthErrorResponse } from "@/types/auth";
 import { SocialAuthButton } from "./SocialAuthButton";
+import { useToast } from "@/components/ui/toast";
 
 type AuthTab = "login" | "register";
 
@@ -89,6 +90,7 @@ export const AuthModal = ({
   const [tab, setTab] = useState<AuthTab>("login");
   const [error, setError] = useState<string | null>(null);
   const { login, register, isLoading } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
@@ -117,11 +119,13 @@ export const AuthModal = ({
 
         if (!username || !email || !password || !confirmPassword) {
           setError("Preencha todos os campos.");
+          toast("error", "Preencha todos os campos.");
           return;
         }
 
         if (password !== confirmPassword) {
           setError("As senhas não coincidem.");
+          toast("error", "As senhas não coincidem.");
           return;
         }
 
@@ -132,6 +136,7 @@ export const AuthModal = ({
 
         if (!email || !password) {
           setError("Informe seu usuário ou e-mail e sua senha.");
+          toast("error", "Informe seu usuário e sua senha.");
           return;
         }
 
@@ -139,9 +144,12 @@ export const AuthModal = ({
       }
 
       onSuccess?.();
+      toast("success", tab === "register" ? "Cadastro realizado com sucesso." : "Login realizado com sucesso.");
       onOpenChange(false);
     } catch (requestError) {
-      setError(getAuthErrorMessage(requestError));
+      const message = getAuthErrorMessage(requestError);
+      setError(message);
+      toast("error", message);
     }
   };
 
@@ -152,7 +160,7 @@ export const AuthModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[460px] gap-0 overflow-hidden rounded-none border-0 bg-card p-0 sm:max-w-[460px] [&>button]:text-primary">
+      <DialogContent className="w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] max-w-[460px] gap-0 overflow-y-auto rounded-none border-0 bg-card p-0 sm:max-w-[460px] [&>button]:text-primary">
         <DialogTitle className="sr-only">
           {tab === "login" ? "Entrar" : "Criar conta"}
         </DialogTitle>

@@ -8,6 +8,7 @@ import { router } from "./router";
 import "./index.css";
 import { CartProvider } from "./lib/cart";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { ToastProvider } from "./components/ui/toast";
 
 async function enableMocking() {
   if (!import.meta.env.DEV) {
@@ -44,11 +45,13 @@ enableMocking().then(() => {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <CartProvider>
-            <AppRouter />
-          </CartProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <CartProvider>
+              <AppRouter />
+            </CartProvider>
+          </AuthProvider>
+        </ToastProvider>
       </QueryClientProvider>
     </StrictMode>,
   );
