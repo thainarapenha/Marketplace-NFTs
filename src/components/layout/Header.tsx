@@ -78,15 +78,6 @@ export const Header = () => {
     window.dispatchEvent(new CustomEvent("kurio:open-mobile-filters"));
   };
 
-  const handleProfileClick = () => {
-    if (isAuthenticated) {
-      void navigate({ to: "/profile" });
-      return;
-    }
-
-    setAuthOpen(true);
-  };
-
   return (
     <>
       <header className="mx-auto mb-6 flex h-14 max-w-[1200px] items-center justify-between border-b border-border px-4 max-md:mb-4 max-md:h-auto max-md:border-b-0 max-md:pb-0 max-md:pt-4 md:px-6">

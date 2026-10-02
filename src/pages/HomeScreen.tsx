@@ -186,6 +186,38 @@ export const HomeScreen = () => {
     return Array.from(counts.entries());
   }, [nfts]);
 
+  const featuredNftCard = nfts[0] ? (
+    <Card className="overflow-hidden border-0 bg-secondary">
+      <CardContent className="p-0">
+        <div className="space-y-1 p-3">
+          <p className="text-sm font-bold text-primary">
+            NFT EM DESTAQUE
+          </p>
+
+          <p className="text-xs font-semibold">
+            {nfts[0].name}
+          </p>
+        </div>
+
+        <AspectRatio
+          ratio={4 / 5}
+        >
+          <Link
+            to="/nft/$id"
+            params={{ id: nfts[0].id }}
+            className="block h-full"
+          >
+            <img
+              src={nfts[0].gallery[0]}
+              alt={nfts[0].name}
+              className="h-full w-full object-cover"
+            />
+          </Link>
+        </AspectRatio>
+      </CardContent>
+    </Card>
+  ) : null;
+
   return (
     <>
       <main className="mx-auto max-w-[1200px] px-4 pb-28 md:px-6 md:pb-0">
@@ -276,8 +308,8 @@ export const HomeScreen = () => {
 
         {/* ---------- Marketplace ---------- */}
 
-        <section className="mt-16 grid gap-6 max-md:mt-8 lg:grid-cols-[190px_1fr]">
-          {/* Desktop / tablet sidebar */}
+        <section className="mt-16 grid gap-6 max-md:mt-8 md:grid-cols-[190px_1fr]">
+          {/* Tablet and desktop sidebar */}
           <aside className="hidden space-y-8 md:block">
             <Card className="border-0 bg-card">
               <CardContent className="space-y-5 p-4">
@@ -370,35 +402,7 @@ export const HomeScreen = () => {
               </CardContent>
             </Card>
 
-            {nfts[0] && (
-              <Card className="overflow-hidden border-0 bg-secondary">
-                <CardContent className="p-0">
-                  <div className="space-y-1 p-3">
-                    <p className="text-sm font-bold text-primary">
-                      NFT EM DESTAQUE
-                    </p>
-
-                    <p className="text-xs font-semibold">
-                      {nfts[0].name}
-                    </p>
-                  </div>
-
-                  <AspectRatio ratio={4 / 5}>
-                    <Link
-                      to="/nft/$id"
-                      params={{ id: nfts[0].id }}
-                      className="block h-full"
-                    >
-                      <img
-                        src={nfts[0].gallery[0]}
-                        alt={nfts[0].name}
-                        className="h-full w-full object-cover"
-                      />
-                    </Link>
-                  </AspectRatio>
-                </CardContent>
-              </Card>
-            )}
+            {featuredNftCard}
           </aside>
 
           <div>
@@ -467,7 +471,7 @@ export const HomeScreen = () => {
 
             {/* ---------- NFT Grid ---------- */}
 
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
               {isNftsLoading && (
                 <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
                   Carregando NFTs...
@@ -642,7 +646,7 @@ export const HomeScreen = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {posts.map((post) => (
               <Card
                 key={post.title}
