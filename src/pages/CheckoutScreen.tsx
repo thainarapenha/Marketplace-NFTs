@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { createOrder, getOrder } from "@/services/order";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 import type { Wallet } from "@/types/wallet";
 
 const NETWORK_LABELS: Record<Wallet["network"], string> = {
@@ -89,6 +90,7 @@ const inputClass =
 
 export const CheckoutScreen = () => {
   const { items, removeQuantities } = useCart();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   const walletsQuery = useWallets();
@@ -100,6 +102,12 @@ export const CheckoutScreen = () => {
   const [purchaseError, setPurchaseError] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState<string>();
   const [showCollectorProfile, setShowCollectorProfile] = useState(false);
+
+  useEffect(() => {
+    if (walletsQuery.isError) {
+      toast("error", getWalletsErrorMessage(walletsQuery.error));
+    }
+  }, [walletsQuery.isError, walletsQuery.error, toast]);
 
   useEffect(() => {
     if (!wallets.some((wallet) => wallet.id === selectedWalletId)) {
@@ -152,7 +160,13 @@ export const CheckoutScreen = () => {
     setPurchaseError(undefined);
 
     if (!hasRequiredFields || !selectedWallet) {
-      setPurchaseError("Revise os dados obrigatórios antes de confirmar a compra.");
+      const message = items.length === 0
+        ? "Seu carrinho está vazio."
+        : !selectedWallet
+          ? "Cadastre uma carteira para finalizar a compra."
+          : "Revise os dados obrigatórios antes de confirmar a compra.";
+      setPurchaseError(message);
+      toast("error", message);
       return;
     }
 
@@ -195,17 +209,18 @@ export const CheckoutScreen = () => {
           })),
         );
         await navigate({ to: "/order/$id", params: { id: order.id } });
+        toast("success", "Compra realizada com sucesso.");
         return;
       }
 
-      setPurchaseError("Não foi possível confirmar a compra. Tente novamente.");
+      const message = "Não foi possível confirmar a compra. Tente novamente.";
+      setPurchaseError(message);
+      toast("error", message);
       setIdempotencyKey(undefined);
     } catch (error) {
-      setPurchaseError(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível processar a compra. Tente novamente.",
-      );
+      const message = error instanceof Error ? error.message : "Não foi possível processar a compra. Tente novamente.";
+      setPurchaseError(message);
+      toast("error", message);
       setIdempotencyKey(undefined);
     } finally {
       setIsProcessing(false);

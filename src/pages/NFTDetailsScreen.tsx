@@ -16,6 +16,7 @@ import {
 
 import { getNftById, getNfts } from "@/services/nft";
 import { useCart } from "@/lib/cart";
+import { useToast } from "@/components/ui/toast";
 
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export const NftDetailScreen = () => {
 
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { toast } = useToast();
 
   const [selected, setSelected] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -312,6 +314,7 @@ export const NftDetailScreen = () => {
                     currentEdition,
                     quantity,
                   );
+                  toast("success", "NFT adicionado ao carrinho.");
 
                   navigate({
                     to: "/cart",

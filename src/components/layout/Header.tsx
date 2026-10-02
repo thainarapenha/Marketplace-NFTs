@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { getAuthReturnLocation } from "@/lib/routeProtection";
+import { useToast } from "@/components/ui/toast";
 
 const navLinks = [
   { label: "Início", path: "/" },
@@ -38,6 +39,7 @@ export const Header = () => {
   const navigate = useNavigate();
 
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const { toast } = useToast();
   const { items } = useCart();
 
   const cartItemCount = items.reduce(
@@ -65,7 +67,12 @@ export const Header = () => {
   const handleLogout = async () => {
     setAuthOpen(false);
     setUserDrawerOpen(false);
-    await logout();
+    try {
+      await logout();
+      toast("success", "Logout realizado com sucesso.");
+    } catch (error) {
+      toast("error", error instanceof Error ? error.message : "Não foi possível sair.");
+    }
   };
 
   const clearAuthReturnLocation = () => {

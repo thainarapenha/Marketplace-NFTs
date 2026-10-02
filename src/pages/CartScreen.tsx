@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 
 import { Link } from "@tanstack/react-router";
+import { useToast } from "@/components/ui/toast";
 
 const NETWORK_FEE = 0.016;
 
@@ -35,6 +36,7 @@ const formatEth = (value: number, decimals = 2) =>
 
 export const CartScreen = () => {
   const { items, updateQuantity, removeItem } = useCart();
+  const { toast } = useToast();
 
   const { data: nfts = [] } = useQuery({
     queryKey: ["nfts"],
@@ -95,6 +97,7 @@ export const CartScreen = () => {
 
     if (nextQuantity < 1) {
       removeItem(nftId, edition);
+      toast("success", "NFT removido do carrinho.");
       return;
     }
 
@@ -320,10 +323,10 @@ export const CartScreen = () => {
                             size="icon"
                             aria-label={`Remover ${item.nft.name}`}
                             onClick={() =>
-                              removeItem(
-                                item.nft.id,
-                                item.edition,
-                              )
+                              (() => {
+                                removeItem(item.nft.id, item.edition);
+                                toast("success", "NFT removido do carrinho.");
+                              })()
                             }
                             className="text-muted-foreground hover:bg-transparent hover:text-primary"
                           >
