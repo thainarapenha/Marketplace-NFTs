@@ -1,60 +1,10 @@
+import nft1 from "@/assets/nfts/nft-1.svg";
+import nft2 from "@/assets/nfts/nft-2.svg";
+import nft3 from "@/assets/nfts/nft-3.svg";
+import nft4 from "@/assets/nfts/nft-4.svg";
 import type { Nft } from "@/types/nft";
 
-const img = (id: number) => {
-  const backgrounds = [
-    "#111827",
-    "#312e81",
-    "#581c87",
-    "#7c2d12",
-    "#854d0e",
-    "#164e63",
-    "#14532d",
-    "#701a75",
-  ];
-
-  const background = backgrounds[(id - 1) % backgrounds.length];
-
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
-      <defs>
-        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${background}"/>
-          <stop offset="100%" stop-color="#020617"/>
-        </linearGradient>
-      </defs>
-
-      <rect width="800" height="800" fill="url(#gradient)"/>
-      <circle cx="${180 + (id * 37) % 420}" cy="${180 + (id * 53) % 420}" r="${100 + (id * 13) % 100}" fill="white" opacity="0.12"/>
-      <circle cx="${520 - (id * 29) % 300}" cy="${520 - (id * 41) % 300}" r="${70 + (id * 17) % 90}" fill="white" opacity="0.08"/>
-
-      <text
-        x="400"
-        y="390"
-        text-anchor="middle"
-        fill="white"
-        font-family="Arial, sans-serif"
-        font-size="96"
-        font-weight="700"
-      >
-        #${String(id).padStart(2, "0")}
-      </text>
-
-      <text
-        x="400"
-        y="470"
-        text-anchor="middle"
-        fill="white"
-        opacity="0.65"
-        font-family="Arial, sans-serif"
-        font-size="28"
-      >
-        NFT COLLECTION
-      </text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-};
+const nftImages = [nft1, nft2, nft3, nft4];
 
 const createNft = ({
   id,
@@ -75,7 +25,10 @@ const createNft = ({
   name,
   collection,
   price,
-  gallery: [img(id), img(id), img(id), img(id)],
+  gallery: (() => {
+    const image = nftImages[(id - 1) % nftImages.length];
+    return [image, image, image, image];
+  })(),
   description,
   editions: ["1/25", "1/50", "1/100"],
   defaultEdition: "1/50",

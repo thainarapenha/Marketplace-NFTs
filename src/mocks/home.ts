@@ -1,3 +1,8 @@
+import nft1 from "@/assets/nfts/nft-1.svg";
+import nft2 from "@/assets/nfts/nft-2.svg";
+import nft3 from "@/assets/nfts/nft-3.svg";
+import nft4 from "@/assets/nfts/nft-4.svg";
+
 export const img = (n: number) => `/images/nft-${n}.jpg`;
 
 export const collections: readonly [string, number][] = [
@@ -84,14 +89,16 @@ export const banners: Banner[] = [
   {
     title: "Lançamentos gênesis de edição limitada",
     text: "Colecione edições escassas diretamente dos criadores antes da revelação pública.",
-    img: img(1),
+    img: nft1,
   },
   {
     title: "Arte digital selecionada e muito mais",
     text: "Explore novos artistas, coleções verificadas e obras digitais que definem a cultura.",
-    img: img(3),
+    img: nft2,
   },
 ];
+
+export const diaryImage = nft3;
 
 export interface Post {
   date: string;
@@ -107,28 +114,28 @@ export const posts: Post[] = [
     read: "6 min",
     title: "Como funciona a propriedade de NFTs",
     text: "Aprenda a colecionar, negociar e verificar ativos digitais.",
-    img: img(3),
+    img: nft1,
   },
   {
     date: "13 de setembro",
     read: "2 min",
     title: "10 artistas digitais para acompanhar",
     text: "Conheça criadores que moldam a cultura digital na rede.",
-    img: img(1),
+    img: nft2,
   },
   {
     date: "15 de setembro",
     read: "3 min",
     title: "Raridade, atributos e procedência",
     text: "Entenda raridade, procedência, direitos autorais e utilidade.",
-    img: img(2),
+    img: nft3,
   },
   {
     date: "15 de setembro",
     read: "2 min",
     title: "Como proteger sua carteira",
     text: "Proteja sua carteira, seus ativos e sua identidade.",
-    img: img(4),
+    img: nft4,
   },
 ];
 

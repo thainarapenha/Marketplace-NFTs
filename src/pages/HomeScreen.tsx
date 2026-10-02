@@ -601,16 +601,18 @@ export const HomeScreen = () => {
           {banners.map((banner) => (
             <Card
               key={banner.title}
-              className="overflow-hidden border-0 bg-card"
+              className="min-w-0 overflow-hidden border-0 bg-card py-0"
             >
-              <CardContent className="grid grid-cols-[1fr_1.1fr] p-0">
-                <img
-                  src={banner.img}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
+              <CardContent className="grid h-[220px] min-w-0 grid-cols-[1fr_1.1fr] p-0 max-md:h-[250px]">
+                <div className="h-full w-full min-w-0 overflow-hidden">
+                  <img
+                    src={banner.img}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                </div>
 
-                <div className="flex flex-col justify-center gap-2 p-4">
+                <div className="flex min-w-0 flex-col justify-center gap-2 p-4">
                   <h3 className="text-sm font-bold">
                     {banner.title}
                   </h3>
@@ -650,13 +652,16 @@ export const HomeScreen = () => {
             {posts.map((post) => (
               <Card
                 key={post.title}
-                className="overflow-hidden border-0 bg-card"
+                className="min-w-0 overflow-hidden border-0 bg-card p-0"
               >
-                <AspectRatio ratio={1}>
+                <AspectRatio
+                  ratio={1}
+                  className="min-w-0 overflow-hidden rounded-xl"
+                >
                   <img
                     src={post.img}
                     alt={post.title}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full rounded-xl object-cover"
                   />
                 </AspectRatio>
 
