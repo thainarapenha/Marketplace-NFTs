@@ -14,6 +14,7 @@ import {
   toPublicUser,
 } from "@/mocks/data/auth";
 import type {
+  ChangePasswordInput,
   LoginCredentials,
   RegisterCredentials,
   Session,
@@ -170,6 +171,41 @@ export const authHandlers = [
     if (session) {
       removeSession(session);
     }
+
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post("/api/auth/password", async ({ request }) => {
+    const user = getAuthenticatedUser(request);
+
+    if (!user) {
+      return errorResponse("UNAUTHENTICATED", "Sessão não encontrada.", 401);
+    }
+
+    const body = (await request.json()) as Partial<ChangePasswordInput>;
+
+    if (!body.currentPassword || !body.newPassword) {
+      return errorResponse(
+        "INVALID_DATA",
+        "A senha atual e a nova senha são obrigatórias.",
+        400,
+      );
+    }
+
+    const currentSalt = user.passwordHash.split(":")[0];
+    const currentPasswordHash = await hashPassword(
+      body.currentPassword,
+      currentSalt,
+    );
+
+    if (currentPasswordHash !== user.passwordHash) {
+      return errorResponse("INVALID_PASSWORD", "A senha atual está incorreta.", 400);
+    }
+
+    const newSalt = crypto.randomUUID();
+    updateUser(user, {
+      passwordHash: await hashPassword(body.newPassword, newSalt),
+    });
 
     return new HttpResponse(null, { status: 204 });
   }),

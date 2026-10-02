@@ -34,11 +34,13 @@ import { getAuthToken, useAuth } from "@/lib/auth";
 import { PRIVATE_QUERY_META } from "@/lib/queryClient";
 import {
   getProfile,
+  changePassword,
   removeAvatar,
   updateAvatar,
   updateProfile,
 } from "@/services/auth";
 import type { Profile, UpdateProfileInput } from "@/types/profile";
+import type { ChangePasswordInput } from "@/types/auth";
 
 type MenuItem = {
   id: string;
@@ -85,9 +87,19 @@ type PasswordFieldProps = {
   id: string;
   label: string;
   autoComplete?: string;
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
 };
 
-const PasswordField = ({ id, label, autoComplete }: PasswordFieldProps) => {
+const PasswordField = ({
+  id,
+  label,
+  autoComplete,
+  value,
+  onChange,
+  disabled,
+}: PasswordFieldProps) => {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -98,6 +110,9 @@ const PasswordField = ({ id, label, autoComplete }: PasswordFieldProps) => {
           name={id}
           type={visible ? "text" : "password"}
           autoComplete={autoComplete}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
           className={cn(inputClass, "pr-11")}
         />
         <button
@@ -121,6 +136,13 @@ export const ProfileScreen = () => {
   const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmNewPassword: "",
+  });
   const [form, setForm] = useState<UpdateProfileInput>({
     displayName: "",
     email: "",
@@ -200,6 +222,27 @@ export const ProfileScreen = () => {
     },
   });
 
+  const passwordMutation = useMutation({
+    mutationFn: async ({ currentPassword, newPassword }: ChangePasswordInput) => {
+      const token = getAuthToken();
+      if (!token) throw new Error("Sessão não encontrada.");
+      return changePassword(token, { currentPassword, newPassword });
+    },
+    onSuccess: () => {
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmNewPassword: "",
+      });
+      setPasswordError(null);
+      setPasswordSuccess("Senha alterada com sucesso.");
+    },
+    onError: (cause) => {
+      setPasswordSuccess(null);
+      setPasswordError(getApiErrorMessage(cause, "Não foi possível alterar a senha."));
+    },
+  });
+
   useEffect(() => {
     if (profileQuery.data) setForm(profileToForm(profileQuery.data));
   }, [profileQuery.data]);
@@ -249,10 +292,42 @@ export const ProfileScreen = () => {
     profileMutation.mutate(form);
   };
 
+  const handlePasswordSubmit = () => {
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (
+      !passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmNewPassword
+    ) {
+      setPasswordError("Preencha todos os campos de senha.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+      setPasswordError("A nova senha e a confirmação devem coincidir.");
+      return;
+    }
+
+    passwordMutation.mutate({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    });
+  };
+
   const updateField = (field: keyof UpdateProfileInput) =>
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setForm((current) => ({ ...current, [field]: event.target.value }));
   };
+
+  const updatePasswordField =
+    (field: keyof typeof passwordForm) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setPasswordForm((current) => ({ ...current, [field]: event.target.value }));
+      setPasswordError(null);
+      setPasswordSuccess(null);
+    };
 
   const isLoading = profileQuery.isPending;
   const isAvatarPending = avatarMutation.isPending || removeAvatarMutation.isPending;
@@ -431,30 +506,22 @@ export const ProfileScreen = () => {
           </div>
 
           {/* Alterar senha */}
-          <section className="flex max-w-[417px] flex-col gap-5">
-            <h2 className="text-sm font-bold">Alterar senha</h2>
+          <section className="flex max-w-[417px] flex-col gap-5" aria-labelledby="change-password-title">
+            <h2 id="change-password-title" className="text-sm font-bold">Alterar senha</h2>
 
-            <PasswordField
-              id="currentPassword"
-              label="Senha atual"
-              autoComplete="current-password"
-            />
-            <PasswordField
-              id="newPassword"
-              label="Nova senha"
-              autoComplete="new-password"
-            />
-            <PasswordField
-              id="confirmNewPassword"
-              label="Confirmar nova senha"
-              autoComplete="new-password"
-            />
+            <PasswordField id="currentPassword" label="Senha atual" autoComplete="current-password" value={passwordForm.currentPassword} onChange={updatePasswordField("currentPassword")} disabled={isLoading || passwordMutation.isPending} />
+            <PasswordField id="newPassword" label="Nova senha" autoComplete="new-password" value={passwordForm.newPassword} onChange={updatePasswordField("newPassword")} disabled={isLoading || passwordMutation.isPending} />
+            <PasswordField id="confirmNewPassword" label="Confirmar nova senha" autoComplete="new-password" value={passwordForm.confirmNewPassword} onChange={updatePasswordField("confirmNewPassword")} disabled={isLoading || passwordMutation.isPending} />
 
-            {error && (
+            {passwordError && (
               <p role="alert" className="text-xs text-destructive">
-                {error}
+                {passwordError}
               </p>
             )}
+            {passwordSuccess && <p role="status" className="text-xs text-primary">{passwordSuccess}</p>}
+            <Button type="button" onClick={handlePasswordSubmit} disabled={isLoading || passwordMutation.isPending} className="h-10 w-[131px] rounded-sm bg-primary text-xs font-bold text-primary-foreground hover:bg-accent">
+              {passwordMutation.isPending ? "Salvando..." : "Alterar senha"}
+            </Button>
           </section>
 
           <Button
@@ -464,6 +531,11 @@ export const ProfileScreen = () => {
           >
             {profileMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
+          {error && (
+            <p role="alert" className="text-xs text-destructive">
+              {error}
+            </p>
+          )}
           {success && <p role="status" className="text-xs text-primary">{success}</p>}
         </form>
       </div>
@@ -479,10 +551,13 @@ const profileToForm = (profile: Profile): UpdateProfileInput => ({
   ensName: profile.ensName,
 });
 
-const getApiErrorMessage = (cause: unknown) => {
+const getApiErrorMessage = (
+  cause: unknown,
+  fallback = "Não foi possível atualizar o perfil.",
+) => {
   if (isAxiosError<{ message?: string }>(cause)) {
-    return cause.response?.data?.message ?? "Não foi possível atualizar o perfil.";
+    return cause.response?.data?.message ?? fallback;
   }
 
-  return cause instanceof Error ? cause.message : "Não foi possível carregar o perfil.";
+  return cause instanceof Error ? cause.message : fallback;
 };

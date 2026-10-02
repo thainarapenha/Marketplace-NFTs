@@ -1,6 +1,7 @@
 import { api } from "@/services/api";
 import type {
   AuthResponse,
+  ChangePasswordInput,
   LoginCredentials,
   RegisterCredentials,
   SessionResponse,
@@ -40,6 +41,15 @@ export const getSession = async (token: string): Promise<SessionResponse> => {
 
 export const logout = async (token: string): Promise<void> => {
   await api.post("/auth/logout", undefined, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+export const changePassword = async (
+  token: string,
+  passwords: ChangePasswordInput,
+): Promise<void> => {
+  await api.post("/auth/password", passwords, {
     headers: { Authorization: `Bearer ${token}` },
   });
 };
@@ -87,6 +97,7 @@ export const authService = {
   login,
   getSession,
   logout,
+  changePassword,
   getProfile,
   updateProfile,
   updateAvatar,

@@ -27,6 +27,11 @@ export interface RegisterCredentials {
   password: string;
 }
 
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthResponse {
   user: User;
   session: Session;
