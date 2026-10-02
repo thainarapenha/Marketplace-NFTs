@@ -11,7 +11,10 @@ import { AuthProvider, useAuth } from "./lib/auth";
 import { ToastProvider } from "./components/ui/toast";
 
 async function enableMocking() {
-  if (!import.meta.env.DEV) {
+  const shouldEnableMocks =
+    import.meta.env.DEV || import.meta.env.VITE_ENABLE_MOCKS === "true";
+
+  if (!shouldEnableMocks) {
     return;
   }
 

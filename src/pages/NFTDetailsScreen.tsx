@@ -493,12 +493,17 @@ export const NftDetailScreen = () => {
                     type="button"
                     aria-label={`Ir para o slide ${index + 1}`}
                     onClick={() => api?.scrollTo(index)}
-                    className={`size-2.5 rounded-full border border-primary ${
-                      dot === index
-                        ? "bg-primary"
-                        : "bg-transparent"
-                    }`}
-                  />
+                    className="flex size-6 items-center justify-center rounded-full"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`size-2.5 rounded-full border border-primary ${
+                        dot === index
+                          ? "bg-primary"
+                          : "bg-transparent"
+                      }`}
+                    />
+                  </button>
                 ),
               )}
             </div>
