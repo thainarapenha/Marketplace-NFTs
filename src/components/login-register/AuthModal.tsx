@@ -152,7 +152,7 @@ export const AuthModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[460px] gap-0 overflow-hidden rounded-none border-0 bg-card p-0 sm:max-w-[460px] [&>button]:text-primary">
+      <DialogContent className="w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] max-w-[460px] gap-0 overflow-y-auto rounded-none border-0 bg-card p-0 sm:max-w-[460px] [&>button]:text-primary">
         <DialogTitle className="sr-only">
           {tab === "login" ? "Entrar" : "Criar conta"}
         </DialogTitle>
