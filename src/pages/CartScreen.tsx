@@ -6,14 +6,6 @@ import { getNfts } from "@/services/nft";
 import { useCart } from "@/lib/cart";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -117,38 +109,9 @@ export const CartScreen = () => {
   const recommendations = nfts.slice(0, 10);
 
   return (
-    <main className="min-h-screen bg-background px-6 py-6 font-mono text-foreground">
+    <main className="min-h-screen bg-background px-6 font-mono text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-12">
         <div className="flex flex-col gap-2">
-          <Breadcrumb>
-            <BreadcrumbList className="text-xs font-bold text-foreground sm:gap-1.5">
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/" className="text-foreground">
-                  Início
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-
-              <BreadcrumbSeparator>/</BreadcrumbSeparator>
-
-              <BreadcrumbItem>
-                <BreadcrumbLink
-                  href="/mercado"
-                  className="text-foreground"
-                >
-                  Mercado
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-
-              <BreadcrumbSeparator>/</BreadcrumbSeparator>
-
-              <BreadcrumbItem>
-                <BreadcrumbPage className="text-foreground">
-                  Carrinho
-                </BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
             {/* Lista de NFTs */}
             <section className="min-w-0">
@@ -508,7 +471,7 @@ export const CartScreen = () => {
                       </span>
 
                       <span className="text-xs font-bold text-primary">
-                        {formatEth(Number(nft.price))}
+                        {formatEth(Number.parseFloat(nft.price))}
                       </span>
                     </div>
                   </Link>

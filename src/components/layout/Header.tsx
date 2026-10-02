@@ -55,6 +55,7 @@ export const Header = () => {
 
   const isHomeRoute = location.pathname === "/";
   const isNftDetailRoute = location.pathname.startsWith("/nft/");
+  const isCartRoute = location.pathname === "/cart";
 
   const handleLogout = async () => {
     setAuthOpen(false);
@@ -118,7 +119,7 @@ export const Header = () => {
 
         <div className="flex items-center gap-3 max-md:w-full">
           {/* Busca mobile */}
-          {!isNftDetailRoute && (
+          {!isNftDetailRoute && !isCartRoute && (
             <div className="relative flex-1 md:hidden">
               <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
 
