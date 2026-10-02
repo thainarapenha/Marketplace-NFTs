@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -24,13 +25,11 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useWallets } from "@/hooks/useWallets";
+import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
+import { createOrder, getOrder } from "@/services/order";
 import { cn } from "@/lib/utils";
 import type { Wallet } from "@/types/wallet";
-
-const NETWORKS = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Base"];
-const WALLET_TYPES = ["Hot wallet", "Cold wallet", "Custodial"];
-const ENS_SUFFIXES = [".eth", ".xyz", ".art"];
 
 const NETWORK_LABELS: Record<Wallet["network"], string> = {
   ethereum: "Ethereum",
@@ -64,6 +63,7 @@ type FieldProps = {
   id: string;
   label?: string;
   required?: boolean;
+  error?: string;
   className?: string;
   children: React.ReactNode;
 };
@@ -72,6 +72,7 @@ const FormField = ({
   id,
   label,
   required,
+  error,
   className,
   children,
 }: FieldProps) => (
@@ -83,6 +84,11 @@ const FormField = ({
       </Label>
     ) : null}
     {children}
+    {error ? (
+      <p className="text-xs text-destructive" role="alert">
+        {error}
+      </p>
+    ) : null}
   </div>
 );
 
@@ -90,12 +96,17 @@ const inputClass =
   "h-10 rounded-md border-border bg-transparent text-xs placeholder:text-primary/70";
 
 export const CheckoutScreen = () => {
-  const { items } = useCart();
+  const { items, removeQuantities } = useCart();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const walletsQuery = useWallets();
   const wallets = walletsQuery.data ?? [];
 
   const [useOtherWallet, setUseOtherWallet] = useState(false);
   const [selectedWalletId, setSelectedWalletId] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string>();
+  const [idempotencyKey, setIdempotencyKey] = useState<string>();
 
   useEffect(() => {
     if (!wallets.some((wallet) => wallet.id === selectedWalletId)) {
@@ -110,6 +121,103 @@ export const CheckoutScreen = () => {
   const selectedWallet = wallets.find(
     (wallet) => wallet.id === selectedWalletId,
   );
+  const displayNameError = !user?.displayName?.trim()
+    ? "Preencha: nome de exibição."
+    : undefined;
+  const usernameError = !user?.username?.trim()
+    ? "Preencha: nome de usuário."
+    : undefined;
+  const emailError = !user?.email?.trim()
+    ? "Preencha: e-mail."
+    : undefined;
+  const addressError = selectedWallet && !selectedWallet.address?.trim()
+    ? "Preencha/complete os dados da carteira."
+    : undefined;
+  const networkError = selectedWallet && !selectedWallet.network
+    ? "Preencha/complete os dados da carteira."
+    : undefined;
+  const walletTypeError = selectedWallet && !selectedWallet.type
+    ? "Preencha/complete os dados da carteira."
+    : undefined;
+  const hasRequiredFields =
+    !displayNameError &&
+    !usernameError &&
+    !emailError &&
+    items.length > 0 &&
+    Boolean(selectedWallet) &&
+    !addressError &&
+    !networkError &&
+    !walletTypeError;
+  const canConfirm =
+    hasRequiredFields &&
+    !walletsQuery.isPending &&
+    !walletsQuery.isError;
+
+  const confirmPurchase = async () => {
+    if (isProcessing) return;
+
+    setPurchaseError(undefined);
+
+    if (!hasRequiredFields || !selectedWallet) {
+      setPurchaseError("Revise os dados obrigatórios antes de confirmar a compra.");
+      return;
+    }
+
+    const attemptKey = idempotencyKey ?? crypto.randomUUID();
+    setIdempotencyKey(attemptKey);
+    setIsProcessing(true);
+
+    try {
+      const pendingOrder = await createOrder(
+        {
+          items: items.map((item) => ({
+            nftId: item.nft.id,
+            name: item.nft.name,
+            tokenId: item.edition,
+            image: item.nft.gallery[0],
+            quantity: item.quantity,
+            unitPrice: parseEth(item.nft.price),
+          })),
+          subtotal,
+          discount,
+          networkFee: NETWORK_FEE,
+          total,
+          wallet: selectedWallet.address,
+          network: selectedWallet.network,
+        },
+        attemptKey,
+      );
+
+      // A única consulta após o processamento simulado mantém o fluxo simples
+      // nesta issue, sem introduzir polling ou recuperação avançada.
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const order = await getOrder(pendingOrder.id);
+
+      if (order.status === "confirmed") {
+        removeQuantities(
+          order.items.map((item) => ({
+            nftId: item.nftId,
+            edition: item.tokenId ?? "",
+            quantity: item.quantity,
+          })),
+        );
+        await navigate({ to: "/order/$id", params: { id: order.id } });
+        return;
+      }
+
+      setPurchaseError("Não foi possível confirmar a compra. Tente novamente.");
+      setIdempotencyKey(undefined);
+    } catch (error) {
+      setPurchaseError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar a compra. Tente novamente.",
+      );
+      setIdempotencyKey(undefined);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const subtotal = useMemo(
     () =>
@@ -159,25 +267,33 @@ export const CheckoutScreen = () => {
                   id="displayName"
                   label="Nome de exibição"
                   required
+                  error={displayNameError}
                 >
-                  <Input id="displayName" className={inputClass} />
+                  <Input
+                    id="displayName"
+                    value={user?.displayName ?? ""}
+                    readOnly
+                    className={inputClass}
+                  />
                 </FormField>
 
-                <FormField id="network" label="Rede" required>
-                  <Select>
+                <FormField
+                  id="network"
+                  label="Rede"
+                  required
+                  error={networkError}
+                >
+                  <Select value={selectedWallet?.network ?? ""} disabled>
                     <SelectTrigger
                       id="network"
                       className="h-10 w-full border-border bg-transparent text-xs text-primary/70"
                     >
-                      <SelectValue placeholder="Selecione uma rede" />
+                      <SelectValue placeholder="Não informada" />
                     </SelectTrigger>
                     <SelectContent>
-                      {NETWORKS.map((network) => (
-                        <SelectItem
-                          key={network}
-                          value={network.toLowerCase()}
-                        >
-                          {network}
+                      {Object.entries(NETWORK_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -188,39 +304,48 @@ export const CheckoutScreen = () => {
                   id="walletAddress"
                   label="Endereço da carteira"
                   required
+                  error={addressError}
                 >
                   <Input
                     id="walletAddress"
-                    placeholder="Endereço 0x da carteira"
+                    value={selectedWallet?.address ?? ""}
+                    placeholder="Não informado"
+                    readOnly
                     className={cn(inputClass, "px-5")}
                   />
                 </FormField>
 
-                <FormField id="walletType" label="Tipo de carteira" required>
-                  <Select>
+                <FormField
+                  id="walletType"
+                  label="Tipo de carteira"
+                  required
+                  error={walletTypeError}
+                >
+                  <Select value={selectedWallet?.type ?? ""} disabled>
                     <SelectTrigger
                       id="walletType"
                       className="h-10 w-full border-border bg-transparent text-xs text-primary/70"
                     >
-                      <SelectValue placeholder="Selecione uma carteira" />
+                      <SelectValue placeholder="Não informado" />
                     </SelectTrigger>
                     <SelectContent>
-                      {WALLET_TYPES.map((type) => (
-                        <SelectItem
-                          key={type}
-                          value={type.toLowerCase()}
-                        >
-                          {type}
-                        </SelectItem>
-                      ))}
+                      {Object.entries(WALLET_TYPE_LABELS).map(
+                        ([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 </FormField>
 
-                <FormField id="email" label="E-mail" required>
+                <FormField id="email" label="E-mail" required error={emailError}>
                   <Input
                     id="email"
                     type="email"
+                    value={user?.email ?? ""}
+                    readOnly
                     className={inputClass}
                   />
                 </FormField>
@@ -231,16 +356,14 @@ export const CheckoutScreen = () => {
                   id="username"
                   label="Nome de usuário"
                   required
+                  error={usernameError}
                 >
-                  <Input id="username" className={inputClass} />
-                </FormField>
-
-                <FormField
-                  id="profileName"
-                  label="Nome do perfil"
-                  required
-                >
-                  <Input id="profileName" className={inputClass} />
+                  <Input
+                    id="username"
+                    value={user?.username ?? ""}
+                    readOnly
+                    className={inputClass}
+                  />
                 </FormField>
 
                 <FormField
@@ -258,27 +381,18 @@ export const CheckoutScreen = () => {
                 <FormField
                   id="referralCode"
                   label="Código de indicação"
-                  required
                 >
                   <Input id="referralCode" className={inputClass} />
                 </FormField>
 
-                <FormField id="ensSuffix" label="Nome ENS" required>
-                  <Select defaultValue=".eth">
-                    <SelectTrigger
-                      id="ensSuffix"
-                      className="h-10 w-24 border-border bg-transparent text-xs"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ENS_SUFFIXES.map((suffix) => (
-                        <SelectItem key={suffix} value={suffix}>
-                          {suffix}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <FormField id="ensName" label="Nome ENS">
+                  <Input
+                    id="ensName"
+                    value={user?.ensName ?? ""}
+                    placeholder="Não informado"
+                    readOnly
+                    className={inputClass}
+                  />
                 </FormField>
               </div>
             </div>
@@ -322,12 +436,9 @@ export const CheckoutScreen = () => {
             {items.length > 0 ? (
               <ul className="flex flex-col gap-2">
                 {items.map((item) => {
-                  console.log("NFT price:", item.nft.price);
                   const itemPrice = parseEth(item.nft.price);
                   const itemSubtotal = itemPrice * item.quantity;
                   const image = item.nft.gallery[0];
-
-                  console.log("Cart items:", items);
 
                   return (
                     <li
@@ -482,13 +593,28 @@ export const CheckoutScreen = () => {
               </RadioGroup>
             )}
 
+            {!walletsQuery.isPending &&
+              !walletsQuery.isError &&
+              wallets.length > 0 &&
+              !selectedWallet && (
+                <p className="text-xs text-destructive" role="alert">
+                  Selecione uma carteira para continuar.
+                </p>
+              )}
+
             <Button
               type="button"
-              disabled={items.length === 0 || !selectedWallet}
+              disabled={!canConfirm || isProcessing}
+              onClick={() => void confirmPurchase()}
               className="mt-2 h-11 w-full bg-primary text-sm font-bold text-primary-foreground hover:bg-accent"
             >
-              Confirmar compra
+              {isProcessing ? "Processando compra..." : "Confirmar compra"}
             </Button>
+            {purchaseError ? (
+              <p className="text-center text-xs text-destructive" role="alert">
+                {purchaseError}
+              </p>
+            ) : null}
           </aside>
         </div>
       </div>
