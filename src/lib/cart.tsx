@@ -46,6 +46,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
   const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   const [items, setItems] = useState<CartItem[]>([]);
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthLoading) {
@@ -53,15 +54,22 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     }
 
     if (!isAuthenticated || !user) {
+      setLoadedUserId(null);
       setItems([]);
       return;
     }
 
+    setLoadedUserId(user.id);
     setItems(getStoredCart(user.id));
   }, [isAuthenticated, isAuthLoading, user]);
 
   useEffect(() => {
-    if (isAuthLoading || !isAuthenticated || !user) {
+    if (
+      isAuthLoading ||
+      !isAuthenticated ||
+      !user ||
+      loadedUserId !== user.id
+    ) {
       return;
     }
 
@@ -69,7 +77,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       getCartStorageKey(user.id),
       JSON.stringify(items),
     );
-  }, [items, isAuthenticated, isAuthLoading, user]);
+  }, [items, isAuthenticated, isAuthLoading, loadedUserId, user]);
 
   const addItem = (nft: Nft, edition: string, quantity = 1) => {
     setItems((currentItems) => {

@@ -10,6 +10,10 @@ import {
   logout as logoutRequest,
   register as registerRequest,
 } from "@/services/auth";
+import {
+  clearPrivateQueryCache,
+  PRIVATE_QUERY_META,
+} from "@/lib/queryClient";
 import type {
   AuthResponse,
   LoginCredentials,
@@ -41,6 +45,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const queryClient = useQueryClient();
   const sessionQuery = useQuery({
     queryKey: SESSION_QUERY_KEY,
+    meta: PRIVATE_QUERY_META,
     queryFn: async () => {
       const token = getStoredToken();
 
@@ -87,6 +92,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     },
     onSettled: () => {
       clearStoredToken();
+      clearPrivateQueryCache(queryClient);
       queryClient.setQueryData(SESSION_QUERY_KEY, null);
     },
   });
