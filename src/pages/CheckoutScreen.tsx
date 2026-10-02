@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -23,18 +23,28 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useWallets } from "@/hooks/useWallets";
 import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/utils";
+import type { Wallet } from "@/types/wallet";
 
 const NETWORKS = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Base"];
 const WALLET_TYPES = ["Hot wallet", "Cold wallet", "Custodial"];
 const ENS_SUFFIXES = [".eth", ".xyz", ".art"];
 
-const WALLET_OPTIONS = [
-  { value: "all", label: null },
-  { value: "metamask", label: "MetaMask" },
-  { value: "coinbase", label: "Coinbase Wallet" },
-];
+const NETWORK_LABELS: Record<Wallet["network"], string> = {
+  ethereum: "Ethereum",
+  polygon: "Polygon",
+  arbitrum: "Arbitrum",
+  optimism: "Optimism",
+  base: "Base",
+};
+
+const WALLET_TYPE_LABELS: Record<Wallet["type"], string> = {
+  hot: "Hot wallet",
+  cold: "Cold wallet",
+  custodial: "Custodial",
+};
 
 const NETWORK_FEE = 0.016;
 
@@ -42,6 +52,11 @@ const parseEth = (value: string) => Number.parseFloat(value);
 
 const formatEth = (value: number, decimals = 2) =>
   `${value.toFixed(decimals)} ETH`;
+
+const getWalletsErrorMessage = (error: unknown) =>
+  error instanceof Error
+    ? error.message
+    : "Não foi possível carregar suas carteiras.";
 
 const Required = () => <span className="ml-0.5 text-primary">*</span>;
 
@@ -76,9 +91,25 @@ const inputClass =
 
 export const CheckoutScreen = () => {
   const { items } = useCart();
+  const walletsQuery = useWallets();
+  const wallets = walletsQuery.data ?? [];
 
   const [useOtherWallet, setUseOtherWallet] = useState(false);
-  const [wallet, setWallet] = useState("coinbase");
+  const [selectedWalletId, setSelectedWalletId] = useState("");
+
+  useEffect(() => {
+    if (!wallets.some((wallet) => wallet.id === selectedWalletId)) {
+      setSelectedWalletId(
+        wallets.find((wallet) => wallet.kind === "primary")?.id ??
+          wallets[0]?.id ??
+          "",
+      );
+    }
+  }, [selectedWalletId, wallets]);
+
+  const selectedWallet = wallets.find(
+    (wallet) => wallet.id === selectedWalletId,
+  );
 
   const subtotal = useMemo(
     () =>
@@ -384,47 +415,76 @@ export const CheckoutScreen = () => {
               Carteira e rede
             </h3>
 
-            <RadioGroup
-              value={wallet}
-              onValueChange={setWallet}
-              className="flex flex-col gap-3"
-            >
-              {WALLET_OPTIONS.map((option) => {
-                const id = `wallet-${option.value}`;
-                const selected = wallet === option.value;
+            {walletsQuery.isPending ? (
+              <div
+                role="status"
+                className="rounded-md border border-border p-4 text-xs text-primary/80"
+              >
+                Carregando suas carteiras...
+              </div>
+            ) : walletsQuery.isError ? (
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/50 p-4 text-xs text-destructive"
+              >
+                {getWalletsErrorMessage(walletsQuery.error)}
+              </div>
+            ) : wallets.length === 0 ? (
+              <div className="rounded-md border border-border p-4 text-xs text-muted-foreground">
+                Você ainda não possui carteiras cadastradas.
+              </div>
+            ) : (
+              <RadioGroup
+                value={selectedWalletId}
+                onValueChange={setSelectedWalletId}
+                className="flex flex-col gap-3"
+              >
+                {wallets.map((wallet) => {
+                  const inputId = `wallet-${wallet.id}`;
+                  const selected = selectedWalletId === wallet.id;
 
-                return (
-                  <Label
-                    key={option.value}
-                    htmlFor={id}
-                    className={cn(
-                      "flex h-11 cursor-pointer items-center gap-3 rounded-md border bg-transparent px-3 text-sm font-normal",
-                      selected
-                        ? "border-foreground"
-                        : "border-border",
-                    )}
-                  >
-                    <RadioGroupItem
-                      id={id}
-                      value={option.value}
-                      className="size-4 border-primary"
-                    />
+                  return (
+                    <Label
+                      key={wallet.id}
+                      htmlFor={inputId}
+                      className={cn(
+                        "flex min-h-16 cursor-pointer items-start gap-3 rounded-md border bg-transparent px-3 py-2.5 text-sm font-normal",
+                        selected ? "border-foreground" : "border-border",
+                      )}
+                    >
+                      <RadioGroupItem
+                        id={inputId}
+                        value={wallet.id}
+                        className="mt-0.5 size-4 shrink-0 border-primary"
+                      />
 
-                    {option.label ? (
-                      <span>{option.label}</span>
-                    ) : (
-                      <span className="rounded-md bg-secondary px-3 py-1 text-[8px] font-bold tracking-wide text-primary">
-                        METAMASK · WALLETCONNECT · COINBASE
+                      <span className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-bold">
+                          <span>
+                            {wallet.kind === "primary"
+                              ? "Carteira principal"
+                              : "Carteira secundária"}
+                          </span>
+                          <span className="rounded-md bg-secondary px-2 py-0.5 text-[9px] font-normal text-primary">
+                            {NETWORK_LABELS[wallet.network]}
+                          </span>
+                          <span className="rounded-md bg-secondary px-2 py-0.5 text-[9px] font-normal text-primary">
+                            {WALLET_TYPE_LABELS[wallet.type]}
+                          </span>
+                        </span>
+                        <span className="break-all text-[11px] text-primary/70">
+                          {wallet.address}
+                        </span>
                       </span>
-                    )}
-                  </Label>
-                );
-              })}
-            </RadioGroup>
+                    </Label>
+                  );
+                })}
+              </RadioGroup>
+            )}
 
             <Button
               type="button"
-              disabled={items.length === 0}
+              disabled={items.length === 0 || !selectedWallet}
               className="mt-2 h-11 w-full bg-primary text-sm font-bold text-primary-foreground hover:bg-accent"
             >
               Confirmar compra

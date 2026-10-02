@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isAxiosError } from "axios";
 
 import { ProfileSidebar, type ProfileSection } from "@/components/profile-wallet/ProfileSidebar";
@@ -73,6 +73,11 @@ type WalletForm = {
 
 const emptyWalletForm: WalletForm = { address: "", network: "", type: "" };
 
+const isWalletFormEqual = (a: WalletForm, b: WalletForm) =>
+  a.address === b.address &&
+  a.network === b.network &&
+  a.type === b.type;
+
 const walletToForm = (wallet?: Wallet): WalletForm =>
   wallet
     ? { address: wallet.address, network: wallet.network, type: wallet.type }
@@ -92,23 +97,61 @@ export const WalletsScreen = () => {
   const [sameAsMain, setSameAsMain] = useState(false);
   const [primaryForm, setPrimaryForm] = useState<WalletForm>(emptyWalletForm);
   const [secondaryForm, setSecondaryForm] = useState<WalletForm>(emptyWalletForm);
+  const [initialPrimaryForm, setInitialPrimaryForm] =
+    useState<WalletForm>(emptyWalletForm);
+  const [initialSecondaryForm, setInitialSecondaryForm] =
+    useState<WalletForm>(emptyWalletForm);
   const [editingSecondaryId, setEditingSecondaryId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const loadedPrimaryWallet = useRef<Wallet | undefined>(undefined);
+  const loadedSecondaryWallet = useRef<Wallet | undefined>(undefined);
+  const hasLoadedWallets = useRef(false);
 
   const walletsQuery = useWallets();
   const createWalletMutation = useCreateWallet();
   const updateWalletMutation = useUpdateWallet();
   const wallets = walletsQuery.data ?? [];
   const primaryWallet = wallets.find((wallet) => wallet.kind === "primary");
-  const secondaryWallets = wallets.filter((wallet) => wallet.kind === "secondary");
+  const secondaryWallet = wallets.find((wallet) => wallet.kind === "secondary");
   const isSaving = createWalletMutation.isPending || updateWalletMutation.isPending;
 
   useEffect(() => {
-    if (walletsQuery.data) {
-      setPrimaryForm(walletToForm(primaryWallet));
+    if (walletsQuery.isSuccess) {
+      const primaryChanged =
+        !hasLoadedWallets.current || loadedPrimaryWallet.current !== primaryWallet;
+      const secondaryChanged =
+        !hasLoadedWallets.current || loadedSecondaryWallet.current !== secondaryWallet;
+
+      if (primaryChanged && isWalletFormEqual(primaryForm, initialPrimaryForm)) {
+        const nextPrimaryForm = walletToForm(primaryWallet);
+        setPrimaryForm(nextPrimaryForm);
+        setInitialPrimaryForm(nextPrimaryForm);
+      }
+
+      if (secondaryChanged && isWalletFormEqual(secondaryForm, initialSecondaryForm)) {
+        const nextSecondaryForm = walletToForm(secondaryWallet);
+        setSecondaryForm(nextSecondaryForm);
+        setInitialSecondaryForm(nextSecondaryForm);
+        setEditingSecondaryId(secondaryWallet?.id ?? null);
+      }
+
+      loadedPrimaryWallet.current = primaryWallet;
+      loadedSecondaryWallet.current = secondaryWallet;
+      hasLoadedWallets.current = true;
     }
-  }, [walletsQuery.data, primaryWallet]);
+  }, [
+    walletsQuery.isSuccess,
+    primaryWallet,
+    secondaryWallet,
+    primaryForm,
+    initialPrimaryForm,
+    secondaryForm,
+    initialSecondaryForm,
+  ]);
+
+  const hasPrimaryChanges = !isWalletFormEqual(primaryForm, initialPrimaryForm);
+  const hasSecondaryChanges = !isWalletFormEqual(secondaryForm, initialSecondaryForm);
 
   const saveWallet = async (form: WalletForm, kind: Wallet["kind"], id?: string) => {
     if (!form.address.trim() || !form.network || !form.type) {
@@ -126,14 +169,32 @@ export const WalletsScreen = () => {
       } else {
         await createWalletMutation.mutateAsync(values);
       }
-      setSuccess(kind === "primary" ? "Carteira principal salva com sucesso." : "Carteira secundária salva com sucesso.");
-      if (kind === "secondary") {
-        setSecondaryForm(emptyWalletForm);
-        setEditingSecondaryId(null);
+
+      const savedForm: WalletForm = {
+        address: values.address,
+        network: values.network,
+        type: values.type,
+      };
+      if (kind === "primary") {
+        setPrimaryForm(savedForm);
+        setInitialPrimaryForm(savedForm);
+      } else {
+        setSecondaryForm(savedForm);
+        setInitialSecondaryForm(savedForm);
       }
+      setSuccess(kind === "primary" ? "Carteira principal salva com sucesso." : "Carteira secundária salva com sucesso.");
     } catch (cause) {
       setError(getApiErrorMessage(cause));
     }
+  };
+
+  const handleCancelPrimary = () => {
+    setPrimaryForm(initialPrimaryForm);
+  };
+
+  const handleCancelSecondary = () => {
+    setSecondaryForm(initialSecondaryForm);
+    setSameAsMain(false);
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -160,15 +221,6 @@ export const WalletsScreen = () => {
                   comprados.
                 </p>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setPrimaryForm(emptyWalletForm)}
-                disabled={isSaving}
-                className="h-auto p-0 text-sm font-bold text-primary hover:bg-transparent hover:text-accent"
-              >
-                Adicionar
-              </Button>
             </header>
 
             <div className="grid grid-cols-1 gap-x-11 gap-y-6 md:grid-cols-2">
@@ -267,18 +319,6 @@ export const WalletsScreen = () => {
                   />
                 </FormField>
 
-                <FormField>
-                  <Input
-                    name="secondaryWallet"
-                    aria-label="ENS ou carteira secundária"
-                    placeholder="ENS ou carteira secundária (opcional)"
-                    value={secondaryForm.address}
-                    onChange={(event) => setSecondaryForm((current) => ({ ...current, address: event.target.value }))}
-                    disabled={isSaving || sameAsMain}
-                    className={inputClass}
-                  />
-                </FormField>
-
                 <FormField id="referralCode" label="Código de indicação">
                   <Input
                     id="referralCode"
@@ -310,13 +350,26 @@ export const WalletsScreen = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={isSaving || walletsQuery.isPending}
-              className="h-10 w-fit rounded-sm bg-primary px-3 text-xs font-bold text-primary-foreground hover:bg-accent"
-            >
-              {isSaving ? "Salvando..." : "Salvar carteira"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="submit"
+                disabled={isSaving || walletsQuery.isPending}
+                className="h-10 w-fit rounded-sm bg-primary px-3 text-xs font-bold text-primary-foreground hover:bg-accent"
+              >
+                {isSaving ? "Salvando..." : "Salvar carteira"}
+              </Button>
+              {hasPrimaryChanges && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelPrimary}
+                  disabled={isSaving}
+                  className="h-10 rounded-sm px-3 text-xs font-bold"
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
             {walletsQuery.isPending && <p className="text-xs text-primary/80" role="status">Carregando carteiras...</p>}
             {walletsQuery.isError && <p className="text-xs text-destructive" role="alert">{getApiErrorMessage(walletsQuery.error)}</p>}
             {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
@@ -324,7 +377,7 @@ export const WalletsScreen = () => {
           </form>
 
           {/* Carteira secundária */}
-          <section className="flex flex-col gap-1.5">
+          <section className="flex flex-col gap-6">
             <header className="flex items-center justify-between gap-4">
               <h2 className="text-base font-bold">Carteira secundária</h2>
 
@@ -344,52 +397,88 @@ export const WalletsScreen = () => {
                 <Label htmlFor="sameAsMain" className="text-xs font-normal">
                   Igual à carteira principal
                 </Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={sameAsMain || isSaving}
-                  onClick={() =>
-                    void saveWallet(
-                      {
-                        ...secondaryForm,
-                        network: secondaryForm.network || primaryForm.network,
-                        type: secondaryForm.type || primaryForm.type,
-                      },
-                      "secondary",
-                      editingSecondaryId ?? undefined,
-                    )
-                  }
-                  className="h-auto p-0 text-sm font-bold text-primary hover:bg-transparent hover:text-accent"
-                >
-                  {editingSecondaryId ? "Salvar" : "Adicionar"}
-                </Button>
               </div>
             </header>
 
-            <p className="text-xs text-primary/80">
-              {secondaryWallets.length === 0 ? (
-                "Você ainda não adicionou uma carteira secundária."
-              ) : (
-                <span className="flex flex-col gap-2">
-                  {secondaryWallets.map((wallet) => (
-                    <span key={wallet.id} className="flex items-center justify-between gap-3">
-                      <span>{wallet.address}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="h-auto p-0 text-xs font-bold text-primary hover:bg-transparent hover:text-accent"
-                        onClick={() => {
-                          setSecondaryForm(walletToForm(wallet));
-                          setEditingSecondaryId(wallet.id);
-                        }}
-                      >
-                        Editar
-                      </Button>
-                    </span>
-                  ))}
-                </span>
+            <div className="grid grid-cols-1 gap-x-11 gap-y-6 md:grid-cols-2">
+              <FormField id="secondaryNetwork" label="Rede" required>
+                <Select
+                  value={secondaryForm.network}
+                  onValueChange={(value) => setSecondaryForm((current) => ({ ...current, network: value as WalletNetwork }))}
+                  disabled={isSaving || sameAsMain}
+                >
+                  <SelectTrigger id="secondaryNetwork" className={selectTriggerClass}>
+                    <SelectValue placeholder="Selecione uma rede" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NETWORKS.map((network) => (
+                      <SelectItem key={network.value} value={network.value}>
+                        {network.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+
+              <FormField id="secondaryAddress" label="Endereço da carteira" required>
+                <Input
+                  id="secondaryAddress"
+                  name="secondaryWallet"
+                  placeholder="Endereço 0x da carteira"
+                  value={secondaryForm.address}
+                  onChange={(event) => setSecondaryForm((current) => ({ ...current, address: event.target.value }))}
+                  disabled={isSaving || sameAsMain}
+                  className={inputClass}
+                />
+              </FormField>
+
+              <FormField id="secondaryWalletType" label="Tipo de carteira" required>
+                <Select
+                  value={secondaryForm.type}
+                  onValueChange={(value) => setSecondaryForm((current) => ({ ...current, type: value as WalletType }))}
+                  disabled={isSaving || sameAsMain}
+                >
+                  <SelectTrigger id="secondaryWalletType" className={selectTriggerClass}>
+                    <SelectValue placeholder="Selecione uma carteira" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {WALLET_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                disabled={isSaving}
+                onClick={() =>
+                  void saveWallet(
+                    secondaryForm,
+                    "secondary",
+                    editingSecondaryId ?? undefined,
+                  )
+                }
+                className="h-10 w-fit rounded-sm bg-primary px-3 text-xs font-bold text-primary-foreground hover:bg-accent"
+              >
+                {isSaving ? "Salvando..." : "Salvar carteira"}
+              </Button>
+              {hasSecondaryChanges && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelSecondary}
+                  disabled={isSaving}
+                  className="h-10 rounded-sm px-3 text-xs font-bold"
+                >
+                  Cancelar
+                </Button>
               )}
-            </p>
+            </div>
           </section>
         </div>
       </div>
