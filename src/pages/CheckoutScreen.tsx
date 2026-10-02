@@ -29,8 +29,6 @@ import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/utils";
 import type { Wallet } from "@/types/wallet";
 
-const ENS_SUFFIXES = [".eth", ".xyz", ".art"];
-
 const NETWORK_LABELS: Record<Wallet["network"], string> = {
   ethereum: "Ethereum",
   polygon: "Polygon",
@@ -117,15 +115,11 @@ export const CheckoutScreen = () => {
   const selectedWallet = wallets.find(
     (wallet) => wallet.id === selectedWalletId,
   );
-  const profileName = user?.walletNickname ?? "";
   const displayNameError = !user?.displayName?.trim()
     ? "Preencha: nome de exibição."
     : undefined;
   const usernameError = !user?.username?.trim()
     ? "Preencha: nome de usuário."
-    : undefined;
-  const profileNameError = !profileName.trim()
-    ? "Preencha: nome do perfil."
     : undefined;
   const emailError = !user?.email?.trim()
     ? "Preencha: e-mail."
@@ -142,7 +136,6 @@ export const CheckoutScreen = () => {
   const hasRequiredFields =
     !displayNameError &&
     !usernameError &&
-    !profileNameError &&
     !emailError &&
     items.length > 0 &&
     Boolean(selectedWallet) &&
@@ -302,20 +295,6 @@ export const CheckoutScreen = () => {
                 </FormField>
 
                 <FormField
-                  id="profileName"
-                  label="Nome do perfil"
-                  required
-                  error={profileNameError}
-                >
-                  <Input
-                    id="profileName"
-                    value={profileName}
-                    readOnly
-                    className={inputClass}
-                  />
-                </FormField>
-
-                <FormField
                   id="secondaryWallet"
                   className="md:mt-[1.625rem]"
                 >
@@ -334,22 +313,14 @@ export const CheckoutScreen = () => {
                   <Input id="referralCode" className={inputClass} />
                 </FormField>
 
-                <FormField id="ensSuffix" label="Nome ENS">
-                  <Select defaultValue=".eth">
-                    <SelectTrigger
-                      id="ensSuffix"
-                      className="h-10 w-24 border-border bg-transparent text-xs"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ENS_SUFFIXES.map((suffix) => (
-                        <SelectItem key={suffix} value={suffix}>
-                          {suffix}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <FormField id="ensName" label="Nome ENS">
+                  <Input
+                    id="ensName"
+                    value={user?.ensName ?? ""}
+                    placeholder="Não informado"
+                    readOnly
+                    className={inputClass}
+                  />
                 </FormField>
               </div>
             </div>
