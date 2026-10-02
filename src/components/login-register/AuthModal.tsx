@@ -22,6 +22,7 @@ type AuthTab = "login" | "register";
 type AuthModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 };
 
   const triggerClass = (active: boolean) =>
@@ -80,7 +81,11 @@ const PasswordField = ({
   );
 };
 
-export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
+export const AuthModal = ({
+  open,
+  onOpenChange,
+  onSuccess,
+}: AuthModalProps) => {
   const [tab, setTab] = useState<AuthTab>("login");
   const [error, setError] = useState<string | null>(null);
   const { login, register, isLoading } = useAuth();
@@ -133,6 +138,7 @@ export const AuthModal = ({ open, onOpenChange }: AuthModalProps) => {
         await login({ email, password });
       }
 
+      onSuccess?.();
       onOpenChange(false);
     } catch (requestError) {
       setError(getAuthErrorMessage(requestError));

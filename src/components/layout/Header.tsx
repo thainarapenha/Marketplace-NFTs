@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LogIn,
   LogOut,
@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
+import {
+  getAuthReturnLocation,
+} from "@/lib/routeProtection";
 
 const navLinks = [
   {
@@ -34,6 +37,7 @@ const navLinks = [
 
 export const Header = () => {
   const [authOpen, setAuthOpen] = useState(false);
+  const authSuccessRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -45,6 +49,14 @@ export const Header = () => {
     0,
   );
 
+  const returnLocation = getAuthReturnLocation(location.searchStr);
+
+  useEffect(() => {
+    if (returnLocation) {
+      setAuthOpen(true);
+    }
+  }, [returnLocation]);
+
   const isMarketRoute =
     location.pathname === "/cart" ||
     location.pathname === "/checkout" ||
@@ -54,6 +66,20 @@ export const Header = () => {
   const handleLogout = async () => {
     setAuthOpen(false);
     await logout();
+  };
+
+  const clearAuthReturnLocation = () => {
+    if (returnLocation) {
+      void navigate({ href: "/" });
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    authSuccessRef.current = true;
+
+    if (returnLocation) {
+      void navigate({ href: returnLocation });
+    }
   };
 
   return (
@@ -143,7 +169,18 @@ export const Header = () => {
 
       <AuthModal
         open={authOpen}
-        onOpenChange={setAuthOpen}
+        onOpenChange={(open) => {
+          setAuthOpen(open);
+
+          if (!open) {
+            if (authSuccessRef.current) {
+              authSuccessRef.current = false;
+            } else {
+              clearAuthReturnLocation();
+            }
+          }
+        }}
+        onSuccess={handleAuthSuccess}
       />
     </>
   );
