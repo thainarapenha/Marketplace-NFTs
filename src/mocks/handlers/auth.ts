@@ -66,6 +66,7 @@ const profileFromUser = (user: NonNullable<ReturnType<typeof findUserById>>) => 
   username: user.username,
   walletNickname: user.walletNickname ?? "",
   ensName: user.ensName ?? "",
+  avatarUrl: user.avatarUrl ?? null,
 });
 
 export const authHandlers = [
@@ -223,6 +224,36 @@ export const authHandlers = [
       walletNickname: body.walletNickname?.trim() ?? "",
       ensName: body.ensName?.trim() ?? "",
     });
+
+    return HttpResponse.json(profileFromUser(user));
+  }),
+
+  http.patch("/api/profile/avatar", async ({ request }) => {
+    const user = getAuthenticatedUser(request);
+
+    if (!user) {
+      return errorResponse("UNAUTHENTICATED", "Sessão não encontrada.", 401);
+    }
+
+    const body = (await request.json()) as { avatarUrl?: string };
+
+    if (!body.avatarUrl?.startsWith("data:image/")) {
+      return errorResponse("INVALID_DATA", "Selecione uma imagem válida.", 400);
+    }
+
+    updateUser(user, { avatarUrl: body.avatarUrl });
+
+    return HttpResponse.json(profileFromUser(user));
+  }),
+
+  http.delete("/api/profile/avatar", ({ request }) => {
+    const user = getAuthenticatedUser(request);
+
+    if (!user) {
+      return errorResponse("UNAUTHENTICATED", "Sessão não encontrada.", 401);
+    }
+
+    updateUser(user, { avatarUrl: null });
 
     return HttpResponse.json(profileFromUser(user));
   }),

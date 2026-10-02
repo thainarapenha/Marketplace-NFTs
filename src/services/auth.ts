@@ -5,7 +5,11 @@ import type {
   RegisterCredentials,
   SessionResponse,
 } from "@/types/auth";
-import type { Profile, UpdateProfileInput } from "@/types/profile";
+import type {
+  Profile,
+  UpdateAvatarInput,
+  UpdateProfileInput,
+} from "@/types/profile";
 
 export const register = async (
   credentials: RegisterCredentials,
@@ -59,6 +63,25 @@ export const updateProfile = async (
   return response.data;
 };
 
+export const updateAvatar = async (
+  token: string,
+  avatar: UpdateAvatarInput,
+): Promise<Profile> => {
+  const response = await api.patch<Profile>("/profile/avatar", avatar, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
+export const removeAvatar = async (token: string): Promise<Profile> => {
+  const response = await api.delete<Profile>("/profile/avatar", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
 export const authService = {
   register,
   login,
@@ -66,4 +89,6 @@ export const authService = {
   logout,
   getProfile,
   updateProfile,
+  updateAvatar,
+  removeAvatar,
 };

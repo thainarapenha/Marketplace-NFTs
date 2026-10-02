@@ -6,6 +6,7 @@ export interface User {
   displayName?: string;
   walletNickname?: string;
   ensName?: string;
+  avatarUrl?: string | null;
 }
 
 export interface Session {

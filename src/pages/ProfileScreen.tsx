@@ -32,7 +32,12 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { PRIVATE_QUERY_META } from "@/lib/queryClient";
-import { getProfile, updateProfile } from "@/services/auth";
+import {
+  getProfile,
+  removeAvatar,
+  updateAvatar,
+  updateProfile,
+} from "@/services/auth";
 import type { Profile, UpdateProfileInput } from "@/types/profile";
 
 type MenuItem = {
@@ -154,22 +159,80 @@ export const ProfileScreen = () => {
     },
   });
 
+  const avatarMutation = useMutation({
+    mutationFn: async (avatar: string) => {
+      const token = getAuthToken();
+      if (!token) throw new Error("Sessão não encontrada.");
+      return updateAvatar(token, { avatarUrl: avatar });
+    },
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["profile", user?.id], profile);
+      setAvatarUrl(null);
+      setSuccess("Avatar atualizado com sucesso.");
+      setError(null);
+    },
+    onError: (cause) => {
+      setAvatarUrl(null);
+      setSuccess(null);
+      setError(getApiErrorMessage(cause));
+    },
+  });
+
+  const removeAvatarMutation = useMutation({
+    mutationFn: async () => {
+      const token = getAuthToken();
+      if (!token) throw new Error("Sessão não encontrada.");
+      return removeAvatar(token);
+    },
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["profile", user?.id], profile);
+      setAvatarUrl(null);
+      setSuccess("Avatar removido com sucesso.");
+      setError(null);
+    },
+    onError: (cause) => {
+      setSuccess(null);
+      setError(getApiErrorMessage(cause));
+    },
+  });
+
   useEffect(() => {
     if (profileQuery.data) setForm(profileToForm(profileQuery.data));
   }, [profileQuery.data]);
 
-  // Libera a URL temporária da pré-visualização
-  useEffect(() => {
-    return () => {
-      if (avatarUrl) URL.revokeObjectURL(avatarUrl);
-    };
-  }, [avatarUrl]);
-
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setAvatarUrl(URL.createObjectURL(file));
+
+    if (!file.type.startsWith("image/")) {
+      setError("Selecione um arquivo de imagem válido.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("A imagem deve ter no máximo 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      setError(null);
+      setSuccess(null);
+      setAvatarUrl(reader.result);
+      avatarMutation.mutate(reader.result);
+    };
+    reader.onerror = () => setError("Não foi possível ler a imagem.");
+    reader.readAsDataURL(file);
     event.target.value = "";
+  };
+
+  const handleAvatarRemove = () => {
+    setError(null);
+    setSuccess(null);
+    removeAvatarMutation.mutate();
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -185,6 +248,8 @@ export const ProfileScreen = () => {
     };
 
   const isLoading = profileQuery.isPending;
+  const isAvatarPending = avatarMutation.isPending || removeAvatarMutation.isPending;
+  const displayedAvatarUrl = avatarUrl ?? profileQuery.data?.avatarUrl;
 
   return (
     <main className="min-h-screen bg-background px-6 py-8 font-mono text-foreground">
@@ -312,7 +377,7 @@ export const ProfileScreen = () => {
                 <span className="text-sm">Avatar</span>
                 <div className="flex items-center gap-6">
                   <Avatar className="size-[50px] border border-border bg-card">
-                    {avatarUrl && <AvatarImage src={avatarUrl} alt="Seu avatar" />}
+                    {displayedAvatarUrl && <AvatarImage src={displayedAvatarUrl} alt="Seu avatar" />}
                     <AvatarFallback className="bg-card text-primary">
                       <ImageIcon className="size-5" />
                     </AvatarFallback>
@@ -329,18 +394,19 @@ export const ProfileScreen = () => {
                   <Button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={isAvatarPending || isLoading}
                     className="h-10 rounded-sm bg-primary px-6 text-xs font-bold text-primary-foreground hover:bg-accent"
                   >
-                    Alterar
+                    {avatarMutation.isPending ? "Salvando..." : "Alterar"}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setAvatarUrl(null)}
-                    disabled={!avatarUrl}
+                    onClick={handleAvatarRemove}
+                    disabled={isAvatarPending || isLoading || !profileQuery.data?.avatarUrl}
                     className="h-auto p-0 text-xs font-normal hover:bg-transparent hover:text-primary"
                   >
-                    Remover
+                    {removeAvatarMutation.isPending ? "Removendo..." : "Remover"}
                   </Button>
                 </div>
               </div>
