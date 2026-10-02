@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 
-import { addOrder, findOrderById } from "@/mocks/data/order";
+import { addOrder, findOrderById, updateOrder } from "@/mocks/data/order";
 import type { Order, OrderItem } from "@/types/order";
 import type { WalletNetwork } from "@/types/wallet";
 
@@ -154,6 +154,18 @@ export const orderHandlers = [
     if (idempotencyKey) {
       idempotentOrders.set(idempotencyKey, { content, order });
     }
+
+    // Simulação curta do processamento assíncrono do pedido.
+    setTimeout(() => {
+      if (order.status !== "pending") {
+        return;
+      }
+
+      updateOrder(order.id, {
+        status: "confirmed",
+        transactionReference: `0x${crypto.randomUUID().replaceAll("-", "")}`,
+      });
+    }, 700);
 
     return HttpResponse.json(order, { status: 201 });
   }),

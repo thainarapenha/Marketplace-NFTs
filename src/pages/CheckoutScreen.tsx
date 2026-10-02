@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -26,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useWallets } from "@/hooks/useWallets";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
+import { createOrder, getOrder } from "@/services/order";
 import { cn } from "@/lib/utils";
 import type { Wallet } from "@/types/wallet";
 
@@ -94,13 +96,17 @@ const inputClass =
   "h-10 rounded-md border-border bg-transparent text-xs placeholder:text-primary/70";
 
 export const CheckoutScreen = () => {
-  const { items } = useCart();
+  const { items, removeQuantities } = useCart();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const walletsQuery = useWallets();
   const wallets = walletsQuery.data ?? [];
 
   const [useOtherWallet, setUseOtherWallet] = useState(false);
   const [selectedWalletId, setSelectedWalletId] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string>();
+  const [idempotencyKey, setIdempotencyKey] = useState<string>();
 
   useEffect(() => {
     if (!wallets.some((wallet) => wallet.id === selectedWalletId)) {
@@ -146,6 +152,72 @@ export const CheckoutScreen = () => {
     hasRequiredFields &&
     !walletsQuery.isPending &&
     !walletsQuery.isError;
+
+  const confirmPurchase = async () => {
+    if (isProcessing) return;
+
+    setPurchaseError(undefined);
+
+    if (!hasRequiredFields || !selectedWallet) {
+      setPurchaseError("Revise os dados obrigatórios antes de confirmar a compra.");
+      return;
+    }
+
+    const attemptKey = idempotencyKey ?? crypto.randomUUID();
+    setIdempotencyKey(attemptKey);
+    setIsProcessing(true);
+
+    try {
+      const pendingOrder = await createOrder(
+        {
+          items: items.map((item) => ({
+            nftId: item.nft.id,
+            name: item.nft.name,
+            tokenId: item.edition,
+            image: item.nft.gallery[0],
+            quantity: item.quantity,
+            unitPrice: parseEth(item.nft.price),
+          })),
+          subtotal,
+          discount,
+          networkFee: NETWORK_FEE,
+          total,
+          wallet: selectedWallet.address,
+          network: selectedWallet.network,
+        },
+        attemptKey,
+      );
+
+      // A única consulta após o processamento simulado mantém o fluxo simples
+      // nesta issue, sem introduzir polling ou recuperação avançada.
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const order = await getOrder(pendingOrder.id);
+
+      if (order.status === "confirmed") {
+        removeQuantities(
+          order.items.map((item) => ({
+            nftId: item.nftId,
+            edition: item.tokenId ?? "",
+            quantity: item.quantity,
+          })),
+        );
+        await navigate({ to: "/order/$id", params: { id: order.id } });
+        return;
+      }
+
+      setPurchaseError("Não foi possível confirmar a compra. Tente novamente.");
+      setIdempotencyKey(undefined);
+    } catch (error) {
+      setPurchaseError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível processar a compra. Tente novamente.",
+      );
+      setIdempotencyKey(undefined);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const subtotal = useMemo(
     () =>
@@ -532,11 +604,17 @@ export const CheckoutScreen = () => {
 
             <Button
               type="button"
-              disabled={!canConfirm}
+              disabled={!canConfirm || isProcessing}
+              onClick={() => void confirmPurchase()}
               className="mt-2 h-11 w-full bg-primary text-sm font-bold text-primary-foreground hover:bg-accent"
             >
-              Confirmar compra
+              {isProcessing ? "Processando compra..." : "Confirmar compra"}
             </Button>
+            {purchaseError ? (
+              <p className="text-center text-xs text-destructive" role="alert">
+                {purchaseError}
+              </p>
+            ) : null}
           </aside>
         </div>
       </div>

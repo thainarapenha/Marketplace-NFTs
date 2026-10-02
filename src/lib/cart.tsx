@@ -16,6 +16,7 @@ interface CartContextValue {
   addItem: (nft: Nft, edition: string, quantity?: number) => void;
   updateQuantity: (nftId: string, edition: string, quantity: number) => void;
   removeItem: (nftId: string, edition: string) => void;
+  removeQuantities: (purchases: { nftId: string; edition: string; quantity: number }[]) => void;
   clearCart: () => void;
 }
 
@@ -121,6 +122,27 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     );
   };
 
+  const removeQuantities = (
+    purchases: { nftId: string; edition: string; quantity: number }[],
+  ) => {
+    setItems((currentItems) =>
+      currentItems.flatMap((item) => {
+        const purchase = purchases.find(
+          (entry) =>
+            entry.nftId === item.nft.id && entry.edition === item.edition,
+        );
+
+        if (!purchase || item.quantity > purchase.quantity) {
+          return purchase
+            ? [{ ...item, quantity: item.quantity - purchase.quantity }]
+            : [item];
+        }
+
+        return [];
+      }),
+    );
+  };
+
   const clearCart = () => setItems([]);
 
   const value = useMemo(
@@ -129,6 +151,7 @@ export const CartProvider = ({ children }: CartProviderProps) => {
       addItem,
       updateQuantity,
       removeItem,
+      removeQuantities,
       clearCart,
     }),
     [items],
