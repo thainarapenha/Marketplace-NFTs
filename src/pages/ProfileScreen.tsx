@@ -1,4 +1,3 @@
-// src/screens/ProfileScreen.tsx
 import { useEffect, useRef, useState } from "react";
 import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,10 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ProfileSidebar,
-  type ProfileSection,
-} from "@/components/profile-wallet/ProfileSidebar";
+import { ProfileSidebar } from "@/components/profile-wallet/ProfileSidebar";
 import { getAuthToken, useAuth } from "@/lib/auth";
 import { PRIVATE_QUERY_META } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
@@ -116,9 +112,6 @@ const PasswordField = ({
 export const ProfileScreen = () => {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
-
-  const [activeSection, setActiveSection] =
-    useState<ProfileSection>("profile");
 
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [avatarSuccess, setAvatarSuccess] = useState<string | null>(null);
@@ -391,10 +384,6 @@ export const ProfileScreen = () => {
       setPasswordSuccess(null);
     };
 
-  const handleSectionChange = (section: ProfileSection) => {
-    setActiveSection(section);
-  };
-
   const isLoading = profileQuery.isPending;
 
   const isAvatarPending =
@@ -406,18 +395,13 @@ export const ProfileScreen = () => {
   return (
     <main className="min-h-screen bg-background px-6 py-8 font-mono text-foreground">
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-7 lg:grid-cols-[310px_1fr]">
-        <ProfileSidebar
-          activeSection={activeSection}
-          onSectionChange={handleSectionChange}
-          onLogout={logout}
-        />
+        <ProfileSidebar onLogout={logout} />
 
-        {activeSection === "profile" && (
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className="flex flex-col gap-6"
-          >
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex flex-col gap-6"
+        >
             <h1 className="text-sm font-bold">
               Perfil do colecionador
             </h1>
@@ -618,6 +602,20 @@ export const ProfileScreen = () => {
               </div>
             </div>
 
+            <Button
+              type="submit"
+              disabled={
+                isLoading ||
+                profileMutation.isPending ||
+                !profileQuery.data
+              }
+              className="h-10 w-[131px] rounded-sm bg-primary text-xs font-bold text-primary-foreground hover:bg-accent"
+            >
+              {profileMutation.isPending
+                ? "Salvando..."
+                : "Salvar"}
+            </Button>
+
             <section
               className="flex max-w-[417px] flex-col gap-5"
               aria-labelledby="change-password-title"
@@ -698,20 +696,6 @@ export const ProfileScreen = () => {
               </Button>
             </section>
 
-            <Button
-              type="submit"
-              disabled={
-                isLoading ||
-                profileMutation.isPending ||
-                !profileQuery.data
-              }
-              className="h-10 w-[131px] rounded-sm bg-primary text-xs font-bold text-primary-foreground hover:bg-accent"
-            >
-              {profileMutation.isPending
-                ? "Salvando..."
-                : "Salvar"}
-            </Button>
-
             {error && (
               <p
                 role="alert"
@@ -730,7 +714,6 @@ export const ProfileScreen = () => {
               </p>
             )}
           </form>
-        )}
       </div>
     </main>
   );

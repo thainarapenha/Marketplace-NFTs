@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { isAxiosError } from "axios";
 
-import { ProfileSidebar, type ProfileSection } from "@/components/profile-wallet/ProfileSidebar";
+import { ProfileSidebar } from "@/components/profile-wallet/ProfileSidebar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -93,7 +93,7 @@ const getApiErrorMessage = (cause: unknown) => {
 
 export const WalletsScreen = () => {
   const { user } = useAuth();
-  const [activeSection, setActiveSection] = useState<ProfileSection>("wallets");
+  const [activeWalletTab, setActiveWalletTab] = useState<"primary" | "secondary">("primary");
   const [sameAsMain, setSameAsMain] = useState(false);
   const [primaryForm, setPrimaryForm] = useState<WalletForm>(emptyWalletForm);
   const [secondaryForm, setSecondaryForm] = useState<WalletForm>(emptyWalletForm);
@@ -199,287 +199,153 @@ export const WalletsScreen = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    void saveWallet(primaryForm, "primary", primaryWallet?.id);
+    if (activeWalletTab === "primary") {
+      void saveWallet(primaryForm, "primary", primaryWallet?.id);
+    } else {
+      void saveWallet(secondaryForm, "secondary", editingSecondaryId ?? undefined);
+    }
+  };
+
+  const isPrimaryTab = activeWalletTab === "primary";
+  const activeForm = isPrimaryTab ? primaryForm : secondaryForm;
+  const hasActiveChanges = isPrimaryTab ? hasPrimaryChanges : hasSecondaryChanges;
+  const handleCancel = isPrimaryTab ? handleCancelPrimary : handleCancelSecondary;
+  const setActiveForm = (update: (current: WalletForm) => WalletForm) => {
+    if (isPrimaryTab) {
+      setPrimaryForm(update);
+    } else {
+      setSecondaryForm(update);
+    }
   };
 
   return (
     <main className="min-h-screen bg-background px-6 py-8 font-mono text-foreground">
       <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-7 lg:grid-cols-[310px_1fr]">
-        <ProfileSidebar
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
+        <ProfileSidebar />
 
-        <div className="flex flex-col gap-10">
-          {/* Carteira principal */}
+        <div className="flex flex-col gap-6">
+          <nav className="flex items-center gap-6 border-b border-border" aria-label="Carteiras">
+            {(["primary", "secondary"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveWalletTab(tab)}
+                className={cn(
+                  "border-b-2 pb-2 text-sm font-bold transition-colors",
+                  activeWalletTab === tab
+                    ? "border-primary text-primary"
+                    : "border-transparent text-foreground/60 hover:text-primary",
+                )}
+                aria-current={activeWalletTab === tab ? "page" : undefined}
+              >
+                {tab === "primary" ? "Carteira principal" : "Carteira secundária"}
+              </button>
+            ))}
+          </nav>
+
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
             <header className="flex items-start justify-between gap-4">
-              <div className="flex flex-col gap-1.5">
-                <h1 className="text-sm font-bold">Carteira principal</h1>
-                <p className="text-xs text-primary/80">
-                  Estas carteiras ficam disponíveis no pagamento e para receber NFTs
-                  comprados.
-                </p>
-              </div>
+              <p className="text-xs text-primary/80">
+                Estas carteiras ficam disponíveis no pagamento e para receber NFTs comprados.
+              </p>
+              {!isPrimaryTab && (
+                <div className="flex shrink-0 items-center gap-2">
+                  <Checkbox
+                    id="sameAsMain"
+                    checked={sameAsMain}
+                    onCheckedChange={(checked) => {
+                      const enabled = checked === true;
+                      setSameAsMain(enabled);
+                      if (enabled) setSecondaryForm(primaryForm);
+                    }}
+                    className="size-4 rounded-full border-primary"
+                  />
+                  <Label htmlFor="sameAsMain" className="text-xs font-normal">
+                    Igual à carteira principal
+                  </Label>
+                </div>
+              )}
             </header>
 
             <div className="grid grid-cols-1 gap-x-11 gap-y-6 md:grid-cols-2">
-              {/* Coluna esquerda */}
               <div className="flex flex-col gap-6">
-                <FormField id="displayName" label="Nome de exibição">
-                  <Input
-                    id="displayName"
-                    name="displayName"
-                    value={user?.username ?? ""}
-                    disabled
-                    className={inputClass}
-                  />
+                <FormField id={`${activeWalletTab}-displayName`} label="Nome de exibição">
+                  <Input id={`${activeWalletTab}-displayName`} value={user?.username ?? ""} disabled className={inputClass} />
                 </FormField>
-
-                <FormField id="network" label="Rede" required>
+                <FormField id={`${activeWalletTab}-network`} label="Rede" required>
                   <Select
-                    value={primaryForm.network}
-                    onValueChange={(value) => setPrimaryForm((current) => ({ ...current, network: value as WalletNetwork }))}
-                    disabled={isSaving}
+                    value={activeForm.network}
+                    onValueChange={(value) => setActiveForm((current) => ({ ...current, network: value as WalletNetwork }))}
+                    disabled={isSaving || (!isPrimaryTab && sameAsMain)}
                   >
-                    <SelectTrigger id="network" className={selectTriggerClass}>
+                    <SelectTrigger id={`${activeWalletTab}-network`} className={selectTriggerClass}>
                       <SelectValue placeholder="Selecione uma rede" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {NETWORKS.map((network) => (
-                        <SelectItem key={network.value} value={network.value}>
-                          {network.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    <SelectContent>{NETWORKS.map((network) => <SelectItem key={network.value} value={network.value}>{network.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-
-                <FormField id="walletAddress" label="Endereço da carteira" required>
+                <FormField id={`${activeWalletTab}-address`} label="Endereço da carteira" required>
                   <Input
-                    id="walletAddress"
-                    name="walletAddress"
+                    id={`${activeWalletTab}-address`}
                     placeholder="Endereço 0x da carteira"
-                    value={primaryForm.address}
-                    onChange={(event) => setPrimaryForm((current) => ({ ...current, address: event.target.value }))}
-                    disabled={isSaving}
+                    value={activeForm.address}
+                    onChange={(event) => setActiveForm((current) => ({ ...current, address: event.target.value }))}
+                    disabled={isSaving || (!isPrimaryTab && sameAsMain)}
                     className={inputClass}
                   />
                 </FormField>
-
-                <FormField id="walletType" label="Tipo de carteira" required>
+                <FormField id={`${activeWalletTab}-type`} label="Tipo de carteira" required>
                   <Select
-                    value={primaryForm.type}
-                    onValueChange={(value) => setPrimaryForm((current) => ({ ...current, type: value as WalletType }))}
-                    disabled={isSaving}
+                    value={activeForm.type}
+                    onValueChange={(value) => setActiveForm((current) => ({ ...current, type: value as WalletType }))}
+                    disabled={isSaving || (!isPrimaryTab && sameAsMain)}
                   >
-                    <SelectTrigger id="walletType" className={selectTriggerClass}>
+                    <SelectTrigger id={`${activeWalletTab}-type`} className={selectTriggerClass}>
                       <SelectValue placeholder="Selecione uma carteira" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {WALLET_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                    <SelectContent>{WALLET_TYPES.map((type) => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </FormField>
-
-                <FormField id="email" label="E-mail">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    value={user?.email ?? ""}
-                    disabled
-                    className={inputClass}
-                  />
+                <FormField id={`${activeWalletTab}-email`} label="E-mail">
+                  <Input id={`${activeWalletTab}-email`} type="email" value={user?.email ?? ""} disabled className={inputClass} />
                 </FormField>
               </div>
 
-              {/* Coluna direita */}
               <div className="flex flex-col gap-6">
-                <FormField id="walletNickname" label="Apelido da carteira">
-                  <Input
-                    id="walletNickname"
-                    name="walletNickname"
-                    className={inputClass}
-                  />
+                <FormField id={`${activeWalletTab}-nickname`} label="Apelido da carteira">
+                  <Input id={`${activeWalletTab}-nickname`} className={inputClass} />
                 </FormField>
-
-                <FormField id="profileName" label="Nome do perfil">
-                  <Input
-                    id="profileName"
-                    name="profileName"
-                    value={user?.username ?? ""}
-                    disabled
-                    className={inputClass}
-                  />
+                <FormField id={`${activeWalletTab}-profileName`} label="Nome do perfil">
+                  <Input id={`${activeWalletTab}-profileName`} value={user?.username ?? ""} disabled className={inputClass} />
                 </FormField>
-
-                <FormField id="referralCode" label="Código de indicação">
-                  <Input
-                    id="referralCode"
-                    name="referralCode"
-                    className={inputClass}
-                  />
+                <FormField id={`${activeWalletTab}-referralCode`} label="Código de indicação">
+                  <Input id={`${activeWalletTab}-referralCode`} className={inputClass} />
                 </FormField>
-
-                <FormField id="ensName" label="Nome ENS">
+                <FormField id={`${activeWalletTab}-ensName`} label="Nome ENS">
                   <div className="flex gap-2.5">
                     <Select defaultValue=".eth">
-                      <SelectTrigger
-                        aria-label="Sufixo ENS"
-                        className="h-10 w-[78px] shrink-0 rounded-sm border-border bg-transparent px-3 text-sm"
-                      >
+                      <SelectTrigger aria-label="Sufixo ENS" className="h-10 w-[78px] shrink-0 rounded-sm border-border bg-transparent px-3 text-sm text-primary/70">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        {ENS_SUFFIXES.map((suffix) => (
-                          <SelectItem key={suffix} value={suffix}>
-                            {suffix}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectContent>{ENS_SUFFIXES.map((suffix) => <SelectItem key={suffix} value={suffix}>{suffix}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Input id="ensName" name="ensName" className={inputClass} />
+                    <Input id={`${activeWalletTab}-ensName`} className={cn(inputClass, "min-w-0 flex-1")} />
                   </div>
                 </FormField>
               </div>
             </div>
 
             <div className="flex gap-2">
-              <Button
-                type="submit"
-                disabled={isSaving || walletsQuery.isPending}
-                className="h-10 w-fit rounded-sm bg-primary px-3 text-xs font-bold text-primary-foreground hover:bg-accent"
-              >
+              <Button type="submit" disabled={isSaving || walletsQuery.isPending} className="h-10 w-fit rounded-sm bg-primary px-3 text-xs font-bold text-primary-foreground hover:bg-accent">
                 {isSaving ? "Salvando..." : "Salvar carteira"}
               </Button>
-              {hasPrimaryChanges && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelPrimary}
-                  disabled={isSaving}
-                  className="h-10 rounded-sm px-3 text-xs font-bold"
-                >
-                  Cancelar
-                </Button>
-              )}
+              {hasActiveChanges && <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving} className="h-10 rounded-sm px-3 text-xs font-bold">Cancelar</Button>}
             </div>
             {walletsQuery.isPending && <p className="text-xs text-primary/80" role="status">Carregando carteiras...</p>}
             {walletsQuery.isError && <p className="text-xs text-destructive" role="alert">{getApiErrorMessage(walletsQuery.error)}</p>}
             {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
             {success && <p className="text-xs text-primary" role="status">{success}</p>}
           </form>
-
-          {/* Carteira secundária */}
-          <section className="flex flex-col gap-6">
-            <header className="flex items-center justify-between gap-4">
-              <h2 className="text-base font-bold">Carteira secundária</h2>
-
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="sameAsMain"
-                  checked={sameAsMain}
-                  onCheckedChange={(checked) => {
-                    const enabled = checked === true;
-                    setSameAsMain(enabled);
-                    if (enabled) {
-                      setSecondaryForm(primaryForm);
-                    }
-                  }}
-                  className="size-4 rounded-full border-primary"
-                />
-                <Label htmlFor="sameAsMain" className="text-xs font-normal">
-                  Igual à carteira principal
-                </Label>
-              </div>
-            </header>
-
-            <div className="grid grid-cols-1 gap-x-11 gap-y-6 md:grid-cols-2">
-              <FormField id="secondaryNetwork" label="Rede" required>
-                <Select
-                  value={secondaryForm.network}
-                  onValueChange={(value) => setSecondaryForm((current) => ({ ...current, network: value as WalletNetwork }))}
-                  disabled={isSaving || sameAsMain}
-                >
-                  <SelectTrigger id="secondaryNetwork" className={selectTriggerClass}>
-                    <SelectValue placeholder="Selecione uma rede" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NETWORKS.map((network) => (
-                      <SelectItem key={network.value} value={network.value}>
-                        {network.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-
-              <FormField id="secondaryAddress" label="Endereço da carteira" required>
-                <Input
-                  id="secondaryAddress"
-                  name="secondaryWallet"
-                  placeholder="Endereço 0x da carteira"
-                  value={secondaryForm.address}
-                  onChange={(event) => setSecondaryForm((current) => ({ ...current, address: event.target.value }))}
-                  disabled={isSaving || sameAsMain}
-                  className={inputClass}
-                />
-              </FormField>
-
-              <FormField id="secondaryWalletType" label="Tipo de carteira" required>
-                <Select
-                  value={secondaryForm.type}
-                  onValueChange={(value) => setSecondaryForm((current) => ({ ...current, type: value as WalletType }))}
-                  disabled={isSaving || sameAsMain}
-                >
-                  <SelectTrigger id="secondaryWalletType" className={selectTriggerClass}>
-                    <SelectValue placeholder="Selecione uma carteira" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {WALLET_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                disabled={isSaving}
-                onClick={() =>
-                  void saveWallet(
-                    secondaryForm,
-                    "secondary",
-                    editingSecondaryId ?? undefined,
-                  )
-                }
-                className="h-10 w-fit rounded-sm bg-primary px-3 text-xs font-bold text-primary-foreground hover:bg-accent"
-              >
-                {isSaving ? "Salvando..." : "Salvar carteira"}
-              </Button>
-              {hasSecondaryChanges && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelSecondary}
-                  disabled={isSaving}
-                  className="h-10 rounded-sm px-3 text-xs font-bold"
-                >
-                  Cancelar
-                </Button>
-              )}
-            </div>
-          </section>
         </div>
       </div>
     </main>

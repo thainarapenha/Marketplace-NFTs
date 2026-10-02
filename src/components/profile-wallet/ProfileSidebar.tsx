@@ -9,8 +9,9 @@ import {
   User,
   type LucideIcon,
 } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
@@ -27,11 +28,12 @@ type MenuItem = {
   id: ProfileSection;
   label: string;
   icon: LucideIcon;
+  route?: "/profile" | "/wallets";
 };
 
 const MENU_ITEMS: MenuItem[] = [
-  { id: "profile", label: "Dados do perfil", icon: User },
-  { id: "wallets", label: "Carteiras", icon: MapPin },
+  { id: "profile", label: "Dados do perfil", icon: User, route: "/profile" },
+  { id: "wallets", label: "Carteiras", icon: MapPin, route: "/wallets" },
   { id: "activity", label: "Atividade", icon: ShoppingCart },
   { id: "wishlist", label: "Lista de interesse", icon: Heart },
   { id: "offers", label: "Ofertas", icon: BadgePercent },
@@ -40,52 +42,73 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 type ProfileSidebarProps = {
-  activeSection: ProfileSection;
-  onSectionChange: (section: ProfileSection) => void;
   onLogout?: () => void;
 };
 
-export const ProfileSidebar = ({
-  activeSection,
-  onSectionChange,
-  onLogout,
-}: ProfileSidebarProps) => (
-  <aside className="h-fit bg-card font-mono">
-    <h2 className="px-2.5 pb-1 pt-4 text-lg font-bold">Meu perfil</h2>
+export const ProfileSidebar = ({ onLogout }: ProfileSidebarProps) => {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
 
-    <nav aria-label="Menu do perfil" className="flex flex-col">
-      {MENU_ITEMS.map(({ id, label, icon: Icon }) => {
-        const active = activeSection === id;
+  const activeSection: ProfileSection | undefined =
+    pathname === "/profile"
+      ? "profile"
+      : pathname === "/wallets"
+        ? "wallets"
+        : undefined;
 
-        return (
-          <Button
-            key={id}
-            type="button"
-            variant="ghost"
-            aria-current={active ? "page" : undefined}
-            onClick={() => onSectionChange(id)}
-            className={cn(
-              "h-[45px] justify-start gap-3 rounded-none border-l-[6px] px-2.5 text-sm font-normal text-primary hover:bg-secondary/40 hover:text-primary",
-              active ? "border-l-primary bg-secondary/40" : "border-l-transparent",
-            )}
-          >
-            <Icon className="size-4" />
-            {label}
-          </Button>
-        );
-      })}
+  return (
+    <aside className="h-fit bg-card font-mono">
+      <h2 className="px-2.5 pb-1 pt-4 text-lg font-bold">Meu perfil</h2>
 
-      <Separator className="mt-1" />
+      <nav aria-label="Menu do perfil" className="flex flex-col">
+        {MENU_ITEMS.map(({ id, label, icon: Icon, route }) => {
+          const active = activeSection === id;
+          const className = cn(
+            "h-[45px] justify-start gap-3 rounded-none border-l-[6px] px-2.5 text-sm font-normal text-primary hover:bg-secondary/40 hover:text-primary",
+            active ? "border-l-primary bg-secondary/40" : "border-l-transparent",
+          );
 
-      <Button
-        type="button"
-        variant="ghost"
-        onClick={onLogout}
-        className="h-12 justify-start gap-3 rounded-none px-4 text-sm font-bold text-primary hover:bg-secondary/40 hover:text-primary"
-      >
-        <LogOut className="size-4" />
-        Sair
-      </Button>
-    </nav>
-  </aside>
-);
+          if (route) {
+            return (
+              <Link
+                key={id}
+                to={route}
+                aria-current={active ? "page" : undefined}
+                className={cn(buttonVariants({ variant: "ghost" }), className)}
+              >
+                <Icon className="size-4" />
+                {label}
+              </Link>
+            );
+          }
+
+          return (
+            <Button
+              key={id}
+              type="button"
+              variant="ghost"
+              aria-current={active ? "page" : undefined}
+              className={className}
+            >
+              <Icon className="size-4" />
+              {label}
+            </Button>
+          );
+        })}
+
+        <Separator className="mt-1" />
+
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onLogout}
+          className="h-12 justify-start gap-3 rounded-none px-4 text-sm font-bold text-primary hover:bg-secondary/40 hover:text-primary"
+        >
+          <LogOut className="size-4" />
+          Sair
+        </Button>
+      </nav>
+    </aside>
+  );
+};
