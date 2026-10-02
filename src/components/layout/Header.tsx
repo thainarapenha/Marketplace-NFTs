@@ -1,4 +1,3 @@
-// src/components/layout/Header.tsx
 import { useEffect, useRef, useState } from "react";
 import {
   LogIn,
@@ -11,9 +10,15 @@ import {
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 
 import { AuthModal } from "@/components/login-register/AuthModal";
-// import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { getAuthReturnLocation } from "@/lib/routeProtection";
@@ -27,6 +32,7 @@ const navLinks = [
 
 export const Header = () => {
   const [authOpen, setAuthOpen] = useState(false);
+  const [userDrawerOpen, setUserDrawerOpen] = useState(false);
   const authSuccessRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,12 +60,11 @@ export const Header = () => {
     location.pathname.startsWith("/order/");
 
   const isHomeRoute = location.pathname === "/";
-  const isNftDetailRoute = location.pathname.startsWith("/nft/");
-  const isCartRoute = location.pathname === "/cart";
   const isCheckoutRoute = location.pathname === "/checkout";
 
   const handleLogout = async () => {
     setAuthOpen(false);
+    setUserDrawerOpen(false);
     await logout();
   };
 
@@ -118,25 +123,62 @@ export const Header = () => {
           })}
         </nav>
 
-        <div className="flex items-center gap-3 max-md:w-full">
+        <div className="flex min-w-0 items-center gap-3 max-md:w-full">
           {/* Busca mobile */}
-          {!isNftDetailRoute && !isCartRoute && !isCheckoutRoute && (
-            <div className="relative flex-1 md:hidden">
-              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
+          <div className="relative min-w-0 flex-1 md:hidden">
+            <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" />
 
-              <input
-                type="search"
-                placeholder="Explorar coleções"
-                aria-label="Explorar coleções"
-                className="h-12 w-full rounded-xl border-0 bg-card pl-12 pr-4 text-sm outline-none placeholder:text-primary/70 focus:ring-1 focus:ring-ring"
-              />
-            </div>
+            <input
+              type="search"
+              placeholder="Explorar coleções"
+              aria-label="Explorar coleções"
+              className="h-12 w-full rounded-xl border-0 bg-card pl-12 pr-4 text-sm outline-none placeholder:text-primary/70 focus:ring-1 focus:ring-ring"
+            />
+          </div>
+
+          {/* Controles mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative size-12 shrink-0 rounded-xl md:hidden"
+            aria-label="Carrinho"
+            onClick={() => navigate({ to: "/cart" })}
+          >
+            <ShoppingCart className="size-5" />
+
+            {cartItemCount > 0 && (
+              <Badge className="absolute -right-1 -top-1 size-4 justify-center rounded-full p-0 text-[10px]">
+                {cartItemCount}
+              </Badge>
+            )}
+          </Button>
+
+          {isAuthenticated && user ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-12 shrink-0 rounded-xl md:hidden"
+              aria-label="Abrir menu do usuário"
+              onClick={() => setUserDrawerOpen(true)}
+            >
+              <User className="size-5" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-12 shrink-0 rounded-xl md:hidden"
+              aria-label="Entrar"
+              onClick={() => setAuthOpen(true)}
+            >
+              <User className="size-5" />
+            </Button>
           )}
 
           {isHomeRoute && (
             <Button
               size="icon"
-              className="size-12 rounded-xl bg-gradient-to-b from-accent to-primary text-primary-foreground md:hidden"
+              className="size-12 shrink-0 rounded-xl bg-gradient-to-b from-accent to-primary text-primary-foreground md:hidden"
               aria-label="Abrir filtros"
               onClick={handleFilterClick}
             >
@@ -210,11 +252,6 @@ export const Header = () => {
         </div>
       </header>
 
-      {/* <MobileBottomNav
-        cartCount={cartItemCount}
-        onProfileClick={handleProfileClick}
-      /> */}
-
       <AuthModal
         open={authOpen}
         onOpenChange={(open) => {
@@ -230,6 +267,38 @@ export const Header = () => {
         }}
         onSuccess={handleAuthSuccess}
       />
+
+      <Drawer open={userDrawerOpen} onOpenChange={setUserDrawerOpen}>
+        <DrawerContent className="md:hidden">
+          <DrawerHeader className="px-5 pb-4 text-left">
+            <DrawerTitle className="flex items-center gap-2">
+              <User className="size-4" />@
+              <Link
+                to="/profile"
+                onClick={() => setUserDrawerOpen(false)}
+                className="underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {user?.username}
+              </Link>
+            </DrawerTitle>
+            <DrawerDescription>
+              Gerencie sua conta e sessão atual.
+            </DrawerDescription>
+          </DrawerHeader>
+
+          <div className="px-5 pb-6">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-2"
+              onClick={handleLogout}
+              disabled={isLoading}
+            >
+              <LogOut className="size-4" />
+              Sair
+            </Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 };

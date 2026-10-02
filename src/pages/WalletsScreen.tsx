@@ -244,7 +244,7 @@ export const WalletsScreen = () => {
           </nav>
 
           <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-            <header className="flex items-start justify-between gap-4">
+            <header className="flex flex-col items-start gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
               <p className="text-xs text-primary/80">
                 Estas carteiras ficam disponíveis no pagamento e para receber NFTs comprados.
               </p>
