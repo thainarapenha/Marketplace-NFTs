@@ -3,6 +3,9 @@ export interface User {
   username: string;
   email: string;
   createdAt: string;
+  displayName?: string;
+  walletNickname?: string;
+  ensName?: string;
 }
 
 export interface Session {

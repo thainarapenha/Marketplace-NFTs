@@ -26,6 +26,8 @@ const SESSION_QUERY_KEY = ["auth", "session"];
 
 const getStoredToken = () => localStorage.getItem(AUTH_TOKEN_KEY);
 
+export const getAuthToken = () => getStoredToken();
+
 const storeToken = (token: string) => localStorage.setItem(AUTH_TOKEN_KEY, token);
 
 const clearStoredToken = () => localStorage.removeItem(AUTH_TOKEN_KEY);

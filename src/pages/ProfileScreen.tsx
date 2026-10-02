@@ -1,5 +1,7 @@
 // src/screens/ProfileScreen.tsx
 import { useEffect, useRef, useState } from "react";
+import { isAxiosError } from "axios";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgePercent,
   Eye,
@@ -28,6 +30,10 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { getAuthToken, useAuth } from "@/lib/auth";
+import { PRIVATE_QUERY_META } from "@/lib/queryClient";
+import { getProfile, updateProfile } from "@/services/auth";
+import type { Profile, UpdateProfileInput } from "@/types/profile";
 
 type MenuItem = {
   id: string;
@@ -103,10 +109,54 @@ const PasswordField = ({ id, label, autoComplete }: PasswordFieldProps) => {
 };
 
 export const ProfileScreen = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState("profile");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [form, setForm] = useState<UpdateProfileInput>({
+    displayName: "",
+    email: "",
+    username: "",
+    walletNickname: "",
+    ensName: "",
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const profileQuery = useQuery({
+    queryKey: ["profile", user?.id],
+    meta: PRIVATE_QUERY_META,
+    enabled: Boolean(user?.id),
+    queryFn: async () => {
+      const token = getAuthToken();
+      if (!token) throw new Error("Sessão não encontrada.");
+      return getProfile(token);
+    },
+  });
+
+  const profileMutation = useMutation({
+    mutationFn: async (values: UpdateProfileInput) => {
+      const token = getAuthToken();
+      if (!token) throw new Error("Sessão não encontrada.");
+      return updateProfile(token, values);
+    },
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["profile", user?.id], profile);
+      void queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+      setForm(profileToForm(profile));
+      setSuccess("Perfil atualizado com sucesso.");
+      setError(null);
+    },
+    onError: (cause) => {
+      setSuccess(null);
+      setError(getApiErrorMessage(cause));
+    },
+  });
+
+  useEffect(() => {
+    if (profileQuery.data) setForm(profileToForm(profileQuery.data));
+  }, [profileQuery.data]);
 
   // Libera a URL temporária da pré-visualização
   useEffect(() => {
@@ -124,16 +174,17 @@ export const ProfileScreen = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-
-    if (data.get("newPassword") !== data.get("confirmNewPassword")) {
-      setError("As senhas não coincidem.");
-      return;
-    }
-
     setError(null);
-    // TODO: enviar os dados para a API
+    setSuccess(null);
+    profileMutation.mutate(form);
   };
+
+  const updateField = (field: keyof UpdateProfileInput) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((current) => ({ ...current, [field]: event.target.value }));
+    };
+
+  const isLoading = profileQuery.isPending;
 
   return (
     <main className="min-h-screen bg-background px-6 py-8 font-mono text-foreground">
@@ -183,11 +234,18 @@ export const ProfileScreen = () => {
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
           <h1 className="text-sm font-bold">Perfil do colecionador</h1>
 
+          {isLoading && <p className="text-xs text-primary/70">Carregando perfil...</p>}
+          {profileQuery.isError && !profileMutation.isPending && (
+            <p role="alert" className="text-xs text-destructive">
+              {getApiErrorMessage(profileQuery.error)}
+            </p>
+          )}
+
           <div className="grid grid-cols-1 gap-x-11 gap-y-6 md:grid-cols-2">
             {/* Coluna esquerda */}
             <div className="flex flex-col gap-6">
               <FormField id="displayName" label="Nome de exibição" required>
-                <Input id="displayName" name="displayName" className={inputClass} />
+                <Input id="displayName" name="displayName" value={form.displayName} onChange={updateField("displayName")} disabled={isLoading} className={inputClass} />
               </FormField>
 
               <FormField id="email" label="E-mail" required>
@@ -196,6 +254,9 @@ export const ProfileScreen = () => {
                   name="email"
                   type="email"
                   autoComplete="email"
+                  value={form.email}
+                  onChange={updateField("email")}
+                  disabled={isLoading}
                   className={inputClass}
                 />
               </FormField>
@@ -204,6 +265,9 @@ export const ProfileScreen = () => {
                 <Input
                   id="walletNickname"
                   name="walletNickname"
+                  value={form.walletNickname}
+                  onChange={updateField("walletNickname")}
+                  disabled={isLoading}
                   className={inputClass}
                 />
               </FormField>
@@ -216,6 +280,9 @@ export const ProfileScreen = () => {
                   id="username"
                   name="username"
                   autoComplete="username"
+                  value={form.username}
+                  onChange={updateField("username")}
+                  disabled={isLoading}
                   className={inputClass}
                 />
               </FormField>
@@ -237,7 +304,7 @@ export const ProfileScreen = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input id="ensName" name="ensName" className={inputClass} />
+                  <Input id="ensName" name="ensName" value={form.ensName} onChange={updateField("ensName")} disabled={isLoading} className={inputClass} />
                 </div>
               </FormField>
 
@@ -309,12 +376,30 @@ export const ProfileScreen = () => {
 
           <Button
             type="submit"
+            disabled={isLoading || profileMutation.isPending || !profileQuery.data}
             className="h-10 w-[131px] rounded-sm bg-primary text-xs font-bold text-primary-foreground hover:bg-accent"
           >
-            Salvar
+            {profileMutation.isPending ? "Salvando..." : "Salvar"}
           </Button>
+          {success && <p role="status" className="text-xs text-primary">{success}</p>}
         </form>
       </div>
     </main>
   );
+};
+
+const profileToForm = (profile: Profile): UpdateProfileInput => ({
+  displayName: profile.displayName,
+  email: profile.email,
+  username: profile.username,
+  walletNickname: profile.walletNickname,
+  ensName: profile.ensName,
+});
+
+const getApiErrorMessage = (cause: unknown) => {
+  if (isAxiosError<{ message?: string }>(cause)) {
+    return cause.response?.data?.message ?? "Não foi possível atualizar o perfil.";
+  }
+
+  return cause instanceof Error ? cause.message : "Não foi possível carregar o perfil.";
 };

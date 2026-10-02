@@ -8,6 +8,7 @@ import {
   findUserByLogin,
   findUserByEmail,
   findUserByUsername,
+  updateUser,
   isSessionExpired,
   removeSession,
   toPublicUser,
@@ -49,6 +50,23 @@ const getBearerToken = (request: Request) => {
     ? authorization.slice("Bearer ".length)
     : undefined;
 };
+
+const getAuthenticatedUser = (request: Request) => {
+  const token = getBearerToken(request);
+  const session = token ? findSessionByToken(token) : undefined;
+  return session && !isSessionExpired(session.token)
+    ? findUserById(session.userId)
+    : undefined;
+};
+
+const profileFromUser = (user: NonNullable<ReturnType<typeof findUserById>>) => ({
+  id: user.id,
+  displayName: user.displayName ?? user.username,
+  email: user.email,
+  username: user.username,
+  walletNickname: user.walletNickname ?? "",
+  ensName: user.ensName ?? "",
+});
 
 export const authHandlers = [
   http.post("/api/auth/register", async ({ request }) => {
@@ -153,5 +171,59 @@ export const authHandlers = [
     }
 
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get("/api/profile", ({ request }) => {
+    const user = getAuthenticatedUser(request);
+
+    if (!user) {
+      return errorResponse("UNAUTHENTICATED", "Sessão não encontrada.", 401);
+    }
+
+    return HttpResponse.json(profileFromUser(user));
+  }),
+
+  http.patch("/api/profile", async ({ request }) => {
+    const user = getAuthenticatedUser(request);
+
+    if (!user) {
+      return errorResponse("UNAUTHENTICATED", "Sessão não encontrada.", 401);
+    }
+
+    const body = (await request.json()) as Partial<{
+      displayName: string;
+      email: string;
+      username: string;
+      walletNickname: string;
+      ensName: string;
+    }>;
+    const displayName = body.displayName?.trim();
+    const email = body.email?.trim().toLowerCase();
+    const username = body.username?.trim();
+
+    if (!displayName || !email || !username) {
+      return errorResponse(
+        "INVALID_DATA",
+        "Nome de exibição, e-mail e nome de usuário são obrigatórios.",
+        400,
+      );
+    }
+
+    const emailOwner = findUserByEmail(email);
+    const usernameOwner = findUserByUsername(username);
+
+    if ((emailOwner && emailOwner.id !== user.id) || (usernameOwner && usernameOwner.id !== user.id)) {
+      return errorResponse("PROFILE_ALREADY_EXISTS", "E-mail ou nome de usuário já cadastrado.", 409);
+    }
+
+    updateUser(user, {
+      displayName,
+      email,
+      username,
+      walletNickname: body.walletNickname?.trim() ?? "",
+      ensName: body.ensName?.trim() ?? "",
+    });
+
+    return HttpResponse.json(profileFromUser(user));
   }),
 ];

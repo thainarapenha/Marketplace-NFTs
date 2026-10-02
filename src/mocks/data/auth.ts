@@ -52,6 +52,12 @@ export const findUserByUsername = (username: string) =>
 export const findUserById = (id: string) =>
   users.find((user) => user.id === id);
 
+export const updateUser = (user: StoredUser, changes: Partial<StoredUser>) => {
+  Object.assign(user, changes);
+  persistState();
+  return user;
+};
+
 export const findUserByLogin = (login: string) =>
   findUserByEmail(login) ?? findUserByUsername(login);
 

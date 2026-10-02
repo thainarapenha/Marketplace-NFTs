@@ -5,6 +5,7 @@ import type {
   RegisterCredentials,
   SessionResponse,
 } from "@/types/auth";
+import type { Profile, UpdateProfileInput } from "@/types/profile";
 
 export const register = async (
   credentials: RegisterCredentials,
@@ -39,9 +40,30 @@ export const logout = async (token: string): Promise<void> => {
   });
 };
 
+export const getProfile = async (token: string): Promise<Profile> => {
+  const response = await api.get<Profile>("/profile", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
+export const updateProfile = async (
+  token: string,
+  profile: UpdateProfileInput,
+): Promise<Profile> => {
+  const response = await api.patch<Profile>("/profile", profile, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  return response.data;
+};
+
 export const authService = {
   register,
   login,
   getSession,
   logout,
+  getProfile,
+  updateProfile,
 };
