@@ -2,14 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -107,6 +99,7 @@ export const CheckoutScreen = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string>();
   const [idempotencyKey, setIdempotencyKey] = useState<string>();
+  const [showCollectorProfile, setShowCollectorProfile] = useState(false);
 
   useEffect(() => {
     if (!wallets.some((wallet) => wallet.id === selectedWalletId)) {
@@ -235,33 +228,33 @@ export const CheckoutScreen = () => {
   return (
     <main className="min-h-screen bg-background px-6 py-6 font-mono text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <Breadcrumb>
-          <BreadcrumbList className="text-xs font-bold text-foreground sm:gap-1.5">
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/" className="text-foreground">
-                Início
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/mercado" className="text-foreground">
-                Mercado
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>/</BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbPage className="text-foreground">
-                Pagamento
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_390px]">
-          <section className="flex flex-col gap-4">
-            <h2 className="text-base font-bold">Perfil do colecionador</h2>
+          <section className="order-2 flex flex-col gap-4 md:order-1">
+            <h2 className="hidden text-base font-bold md:block">
+              Perfil do colecionador
+            </h2>
 
-            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+            <Button
+              type="button"
+              variant="link"
+              aria-expanded={showCollectorProfile}
+              aria-controls="collector-profile-fields"
+              onClick={() => setShowCollectorProfile((value) => !value)}
+              className="h-auto self-start p-0 text-sm font-bold text-primary hover:text-primary hover:no-underline md:hidden"
+            >
+              {showCollectorProfile
+                ? "Ocultar perfil do colecionador →"
+                : "Ver perfil do colecionador →"}
+            </Button>
+
+            <div
+              id="collector-profile-fields"
+              className={cn(
+                "flex flex-col gap-4",
+                !showCollectorProfile && "hidden md:flex",
+              )}
+            >
+              <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
               <div className="flex flex-col gap-4">
                 <FormField
                   id="displayName"
@@ -395,37 +388,38 @@ export const CheckoutScreen = () => {
                   />
                 </FormField>
               </div>
-            </div>
+              </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="otherWallet"
-                checked={useOtherWallet}
-                onCheckedChange={(checked) =>
-                  setUseOtherWallet(checked === true)
-                }
-                className="size-4 rounded-full border-primary"
-              />
-              <Label
-                htmlFor="otherWallet"
-                className="text-sm font-normal"
-              >
-                Usar outra carteira?
-              </Label>
-            </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="otherWallet"
+                  checked={useOtherWallet}
+                  onCheckedChange={(checked) =>
+                    setUseOtherWallet(checked === true)
+                  }
+                  className="size-4 rounded-full border-primary"
+                />
+                <Label
+                  htmlFor="otherWallet"
+                  className="text-sm font-normal"
+                >
+                  Usar outra carteira?
+                </Label>
+              </div>
 
-            <FormField
-              id="note"
-              label="Observação do colecionador (opcional)"
-            >
-              <Textarea
+              <FormField
                 id="note"
-                className="min-h-36 w-full resize-none rounded-md border-border bg-transparent text-xs md:w-[calc(50%-1.5rem+2rem)]"
-              />
-            </FormField>
+                label="Observação do colecionador (opcional)"
+              >
+                <Textarea
+                  id="note"
+                  className="min-h-36 w-full resize-none rounded-md border-border bg-transparent text-xs md:w-[calc(50%-1.5rem+2rem)]"
+                />
+              </FormField>
+            </div>
           </section>
 
-          <aside className="flex flex-col gap-3">
+          <aside className="order-1 flex flex-col gap-3 md:order-2">
             <h2 className="text-base font-bold">Seus NFTs</h2>
 
             <div className="flex items-center justify-between text-sm font-bold">
