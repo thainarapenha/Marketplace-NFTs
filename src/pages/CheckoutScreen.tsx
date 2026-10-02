@@ -28,6 +28,11 @@ import { useCart } from "@/lib/cart";
 import { cn } from "@/lib/utils";
 import type { Wallet } from "@/types/wallet";
 
+import {
+  OrderConfirmationModal,
+  type OrderSummary,
+} from "@/components/order/OrderConfirmationModal";
+
 const NETWORKS = ["Ethereum", "Polygon", "Arbitrum", "Optimism", "Base"];
 const WALLET_TYPES = ["Hot wallet", "Cold wallet", "Custodial"];
 const ENS_SUFFIXES = [".eth", ".xyz", ".art"];
@@ -96,6 +101,35 @@ export const CheckoutScreen = () => {
 
   const [useOtherWallet, setUseOtherWallet] = useState(false);
   const [selectedWalletId, setSelectedWalletId] = useState("");
+
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+
+  const mockOrder: OrderSummary = {
+    transactionId: "0x8f7a2c91d4e6b3a19c52f84e7d6a1b09",
+    date: "02/10/2026",
+    wallet: "0x742d...44e",
+    network: "Ethereum",
+    networkFee: 0.016,
+    items: items.length
+      ? items.map((item) => ({
+          id: item.nft.id,
+          name: item.nft.name,
+          tokenId: item.edition,
+          price: parseEth(item.nft.price),
+          editions: item.quantity,
+          image: item.nft.gallery[0],
+        }))
+      : [
+          {
+            id: "mock-nft-1",
+            name: "NFT de exemplo",
+            tokenId: "1234",
+            price: 0.25,
+            editions: 2,
+            image: "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d",
+          },
+        ],
+  };
 
   useEffect(() => {
     if (!wallets.some((wallet) => wallet.id === selectedWalletId)) {
@@ -485,6 +519,7 @@ export const CheckoutScreen = () => {
             <Button
               type="button"
               disabled={items.length === 0 || !selectedWallet}
+              onClick={() => setIsConfirmationOpen(true)}
               className="mt-2 h-11 w-full bg-primary text-sm font-bold text-primary-foreground hover:bg-accent"
             >
               Confirmar compra
@@ -492,6 +527,12 @@ export const CheckoutScreen = () => {
           </aside>
         </div>
       </div>
+
+      <OrderConfirmationModal
+        open={isConfirmationOpen}
+        onOpenChange={setIsConfirmationOpen}
+        order={mockOrder}
+      />
     </main>
   );
 };
