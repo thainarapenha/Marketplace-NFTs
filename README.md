@@ -261,18 +261,11 @@ Os relatórios gerados ficam em:
 reports/lighthouse/
 ```
 
-## 14. Limitações e funcionalidades não implementadas
+## 14. Arquitetura
 
-Os itens abaixo fazem parte do escopo original do desafio, mas não foram implementados na versão 
-entregue por limitações de tempo para desenvolvimento do escopo completo.
-
-
-| **Item**    |
-| ----------  |
-| Socket.IO   |
-| Playwright  |
-| Cupom       |
-
-Os cenários acima não dependem de eventos em tempo real. A implementação de cenários relacionados a **Socket.IO, alterações de preço ou disponibilidade em tempo real, desconexão, retomada de pedidos ou eventos duplicados** não faz parte da versão entregue.
+As decisões de arquitetura, decisões de UX, desvios do Figma e limitações da implementação estão documentados em [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 O projeto não depende de backend privado ou serviços de produção para executar os fluxos disponibilizados nesta versão.
+
+## Contato
+LinkedIn: [Thainara Penha](https://www.linkedin.com/in/thainarapenha/)
