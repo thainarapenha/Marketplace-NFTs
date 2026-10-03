@@ -1,9 +1,15 @@
 # Marketplace NFT
 
+<img width="1354" height="768" alt="Image" src="https://github.com/user-attachments/assets/da66187b-d99a-4fa4-b912-802cfb9eb9c3" />
+
 Aplicação frontend desenvolvida como parte de um desafio técnico, com foco na implementação de um marketplace de NFTs, 
 seus principais fluxos de compra e gerenciamento de conta.
 
+O desafio consiste em desenvolver um marketplace de NFTs responsivo, reproduzindo os fluxos apresentados no escopo e mantendo uma experiência consistente em desktop, tablet e mobile.
+
 **Repositório do desafio:** [frontend-challenge](https://github.com/junglegaming/frontend-challenge)
+
+**Aplicação publicada:** [Marketplace NFT](https://marketplace-nf-ts.vercel.app/)
 
 ## 1. Stack
 
